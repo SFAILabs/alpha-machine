@@ -170,4 +170,58 @@ class ProcessingResult:
             "success": self.success,
             "error_message": self.error_message,
             "raw_ai_response": self.raw_ai_response
+        }
+
+
+@dataclass
+class FilteredTranscript:
+    """Represents a filtered transcript stored in Supabase."""
+    original_filename: str
+    filtered_content: str
+    original_length: int
+    filtered_length: int
+    redaction_count: int
+    id: Optional[str] = None
+    meeting_date: Optional[datetime] = None
+    participants: List[str] = field(default_factory=list)
+    project_tags: List[str] = field(default_factory=list)
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for Supabase storage."""
+        return {
+            "id": self.id,
+            "original_filename": self.original_filename,
+            "filtered_content": self.filtered_content,
+            "original_length": self.original_length,
+            "filtered_length": self.filtered_length,
+            "redaction_count": self.redaction_count,
+            "meeting_date": self.meeting_date.isoformat() if self.meeting_date else None,
+            "participants": self.participants,
+            "project_tags": self.project_tags,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None
+        }
+
+
+@dataclass
+class TranscriptFilteringResult:
+    """Represents the result of filtering a transcript."""
+    original_transcript: str
+    filtered_transcript: str
+    redaction_count: int
+    processing_time: float
+    success: bool = True
+    error_message: Optional[str] = None
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for JSON serialization."""
+        return {
+            "original_length": len(self.original_transcript),
+            "filtered_length": len(self.filtered_transcript),
+            "redaction_count": self.redaction_count,
+            "processing_time": self.processing_time,
+            "success": self.success,
+            "error_message": self.error_message
         } 

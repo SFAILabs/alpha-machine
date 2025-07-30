@@ -7,6 +7,7 @@ from datetime import datetime
 from ...services.ai_service import OpenAIService
 from ...services.supabase_service import SupabaseService
 from ...core.config import Config
+from .filter_service import TranscriptFilterService
 
 
 class TranscriptProcessor:
@@ -21,6 +22,7 @@ class TranscriptProcessor:
             temperature=Config.OPENAI_TEMPERATURE
         )
         self.supabase_manager = SupabaseService()
+        self.filter_service = TranscriptFilterService()
     
     def process_transcript(self, raw_transcript: str, metadata: Dict[str, Any]) -> Dict[str, Any]:
         """Process transcript with AI filtering and store in Supabase."""

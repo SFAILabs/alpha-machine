@@ -16,6 +16,9 @@ from ...services.supabase_service import SupabaseService
 from ...services.ai_service import OpenAIService
 from ...services.linear_service import LinearService
 from ...services.notion_service import NotionService
+from .chat_history import ChatHistoryService
+from .context_manager import ContextManager
+from .ai_service import SlackAIService
 from ...core.config import Config
 from ...core.models import LinearContext
 
@@ -40,6 +43,7 @@ class SlackBot:
             default_assignee=Config.LINEAR_DEFAULT_ASSIGNEE
         )
         self.notion_service = NotionService()
+        self.chat_history_service = ChatHistoryService()
         self._setup_commands()
     
     def _setup_commands(self):
@@ -47,25 +51,41 @@ class SlackBot:
         
         @self.app.command("/chat")
         def handle_chat_command(ack, command):
-            """Handle /chat command for AI conversation with full context."""
+            """Handle /chat command for AI conversation with conversation history."""
             ack()
             
             user_id = command['user_id']
             channel_id = command['channel_id']
             text = command['text']
             
-            # Get comprehensive context
-            context = self._get_comprehensive_context()
+            # Get previous response ID for conversation history
+            previous_response_id = self.chat_history_service.get_previous_response_id(user_id, channel_id)
             
-            # Generate AI response
-            response = self._generate_contextual_response(text, context)
-            
-            # Send response
-            self.slack_service.send_ephemeral_message(
-                channel=channel_id,
-                user=user_id,
-                text=response
-            )
+            # Generate AI response using Responses API
+            try:
+                if previous_response_id:
+                    # Continue existing conversation
+                    result = self.ai_service.continue_conversation(text, previous_response_id)
+                else:
+                    # Start new conversation
+                    result = self.ai_service.chat_with_responses_api(text)
+                
+                # Store the new response ID for future conversations
+                self.chat_history_service.store_previous_response_id(user_id, channel_id, result['response_id'])
+                
+                # Send response
+                self.slack_service.send_ephemeral_message(
+                    channel=channel_id,
+                    user=user_id,
+                    text=result['response']
+                )
+            except Exception as e:
+                # Send error message
+                self.slack_service.send_ephemeral_message(
+                    channel=channel_id,
+                    user=user_id,
+                    text=f"Error: {str(e)}"
+                )
         
         @self.app.command("/summarize")
         def handle_summarize_command(ack, command):
@@ -146,6 +166,28 @@ class SlackBot:
                 channel=channel_id,
                 user=user_id,
                 text=summary
+            )
+        
+        @self.app.command("/clear-chat")
+        def handle_clear_chat_command(ack, command):
+            """Handle /clear-chat command to clear conversation history."""
+            ack()
+            
+            user_id = command['user_id']
+            channel_id = command['channel_id']
+            
+            # Clear conversation history
+            success = self.chat_history_service.clear_conversation(user_id, channel_id)
+            
+            if success:
+                message = "✅ Conversation history cleared successfully!"
+            else:
+                message = "❌ Failed to clear conversation history."
+            
+            self.slack_service.send_ephemeral_message(
+                channel=channel_id,
+                user=user_id,
+                text=message
             )
     
     def _get_comprehensive_context(self) -> str:
