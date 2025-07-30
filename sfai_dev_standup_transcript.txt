@@ -1,0 +1,374 @@
+nash@sfaiconsultants.com | 00:00
+I remed a.
+Dirk Jan van Veen | 00:03
+Hey, could you see us both? Sorry, it came from another meeting. Arthur joined shortly as well; he wanted to kick off the meeting.
+nash@sfaiconsultants.com | 00:17
+Nice shirt, Dirk.
+Speaker 3 | 00:19
+Yeah, I like it. Yeah.
+Dirk Jan van Veen | 00:20
+You a real developer shirt.
+Speaker 3 | 00:25
+[Laughter].
+Dirk Jan van Veen | 00:25
+We.
+nash@sfaiconsultants.com | 00:26
+Come. Just come from a business meeting.
+Dirk Jan van Veen | 00:28
+We. very interesting that the way we dress on these calls actually matters, which is very strange to me, really, but yeah.
+So if we talk to CEOs and I show up in a T-shirt, it doesn't go well. If I talk to CTOs and I show up in a shirt, it doesn't go well.
+It's... Yeah, it's very superficial, but people really read into those signals. But.
+Arthur Wandzel | 01:10
+Goodly. All right, so who's got background noise.
+nash@sfaiconsultants.com | 01:36
+Should should be better.
+Arthur Wandzel | 01:38
+Great, thanks. All right, guys, so let's huddle up. We're going to release some great stuff together here. The focus, as a group, is to transcend out of a development shop. We don't want to be a dev shop for AI, it's not.
+That's not a good long-term position given that our major competitor is OpenAI. So OpenAI is only going to get better. I mean, Lovable released an integrated full-stack development platform. It's just going to get more and more like that going forward.
+Dirk Jan van Veen | 02:26
+And so we'd expect that for ANT.
+Arthur Wandzel | 02:27
+And we'd expect that development for NVPS to diminish, and so we have to reach into a product space.
+That means that extending, moving past, we're doing POC NB products.
+Dirk Jan van Veen | 02:42
+We develop more often conces to reach the product levels is freely to commercialized products that in your backy is great years right now get to the home where that just gives.
+Arthur Wandzel | 02:43
+We need to develop the core competencies to reach the product level.
+So the upside there is tremendous if we're able to commercialize products. That means that our growth trajectory as a group isn't linear, which it currently is, right? So we're adding another developer, but that just means that we have to run many more projects.
+Dirk Jan van Veen | 03:05
+So to run the benefit of product is that you don want and they grow as many customers as you want.
+Arthur Wandzel | 03:10
+The benefit of a product is that you build it once and serve as many customers as you want, right?
+So, in that case, then our growth trajectory isn't a 4x, it's about a plus X.
+Dirk Jan van Veen | 03:17
+So in that case, that.
+Arthur Wandzel | 03:24
+So what does that look like? That means that for every hour you put in, you get paid ten hours. So that's exciting, and I think that's the goal and that's the ambition of Asset AI Labs.
+So, we focus on that. We have to build the team culture to be product owners, which means that we have to have a product mindset with everything that we do.
+Dirk Jan van Veen | 03:41
+To build the team come through to the products, the mentality. We have to have a broad mindset with everything that we do and we're going to products.
+Arthur Wandzel | 03:50
+And we're going to move into viewing our group more as individual leaders of products. We're going to release an incentive structure that is aligned to products.
+That means that we're going to have a product by contribution model.
+So, that means the more you contribute to a product, the more you have an equity stake in that product. So, that means when we release it, the payout goes proportionally to anybody who's contributed.
+Having said that, a BI contribution model is what we're aiming towards.
+Dirk Jan van Veen | 04:28
+Not different model is more orgining towards. Would you mind to move into science in sort of, you know, internal initiatives too.
+Arthur Wandzel | 04:31
+We want to move into a system that we can create that assigns contribution by value. And so we're going to release this internal initiative.
+So we've got a few internal initiatives to not only allow us to move beyond a development agency but to release this by contribution model, which is really exciting.
+Dirk Jan van Veen | 04:49
+Not only a lot of us who are beyond me to release this audio contribution model, which is really exciting.
+Arthur Wandzel | 04:58
+I think this is the world's first.
+Dirk Jan van Veen | 04:58
+I think this is the world's first. I think I see.
+Arthur Wandzel | 05:00
+Simply because we didn't have unbiased project managers in the past or product managers, but now we do because we have AI, and so I'm not going to get into the details of how we derive this, but we basically went through each of the tasks that we're doing currently manually, and then we said, "Okay, where does AI?
+Dirk Jan van Veen | 05:01
+We'biased AI fit have biased project managers, and so I get into the details of how we arrived at this. So we basically went through each of the tasks that we were doing correctly, manually, rest understanding compared to to.
+Arthur Wandzel | 05:22
+Where can AI fit in?
+And actually, we defined three initiatives, which have different use cases, but fundamentally, we have an internally facing AI project manager called Alpha Machine.
+Dirk Jan van Veen | 05:31
+The expensive stuff but internally facing both out and in, so this is what's going to allow us to release this.
+Arthur Wandzel | 05:44
+So this is what's going to allow us to release this contribution model.
+Then we have Rev Mag, which is about externally facing value creation, about targeting key users.
+Dirk Jan van Veen | 05:55
+Externally. Everything about targeting key users some of these two buil.
+Arthur Wandzel | 06:00
+So these two pair together. So if we build a product with Alpha Machine, we can build revenue magnets from it with external targeting and acquisition of clients.
+Dirk Jan van Veen | 06:02
+So we build a product with the limit we can build revenue magnets, managed with external integrity and with clients, and expensively seen any of.
+Arthur Wandzel | 06:12
+And that's what Reb Macs is for. And then this is our end-to-end productization pipeline, where we call it "ZA Zen." But it's basically understanding how we can build integrated components for constructing products from scratch.
+Dirk Jan van Veen | 06:28
+Constructing. So it is going to be a little bit.
+Arthur Wandzel | 06:31
+So it's this is going to be a lot of IP, and what differentiates us in the long run is our ability to productize faster.
+Dirk Jan van Veen | 06:33
+I will differentiate us in the long run. It's our ability to provide... You can think of us as internal products, and I want to build this app, and so is Sketchy because we can particularize one product that's coming to the websites we're storing down.
+Arthur Wandzel | 06:39
+You can think of us as indie hackers meet AI agency. So we're going to churn out products.
+So we want to build this kind of pipeline. It's still a little bit sketchy because we haven't done that much. I mean, I think we only have one product that's coming to life, which is RX Pharmacy right now, but we're working on others. There's a company called My Data Move and then Albemed. These are all companies that can be end products.
+Dirk Jan van Veen | 07:06
+Companies products for a national Michigan we.
+Arthur Wandzel | 07:09
+So let's dive into it. Are there any high-level questions before we dive into the Alpha Machine and how we're going to implement that.
+Dirk Jan van Veen | 07:22
+I think it's good to place a focus. So, the focus here is what we call the Alpha Machine. It will allow us to do our projects much faster from one, from a management perspective, and two, from a dev perspective because everything will be better scoped.
+Then the middle one is more of a commercial one, so just notice that it's there. Then the last one is actually very interesting. The "ZA Zen" speaks to the idea that we just want to be masters at our craft and mindful.
+So we want to be masters and we don't want to be stressed. And those pair together.
+Arthur Wandzel | 08:10
+Yeah. So reaching that kind of equanimity between striving to be the best in the world but not... but enjoy what we do. I think those things are mutually harmonious because if we're the best in the world, that means we're making money.
+But doing what you do is a currency of its own. Or loving what you do is a currency of its own. But we need to make money and love what we do. Okay, so this is the Alpha Machine structure. We're going to scout tickets for this and implement it. I'm not sure why the icons are not showing up. Dirk, are you on this right now? Some of them are coming through.
+Dirk Jan van Veen | 09:07
+Let me see if I'm on that. I don't see... Let me check. Yep, I'm not off. It's just a.
+Arthur Wandzel | 09:22
+All right. I think that's just the thought I have.
+As yeah, I guess we're missing Notion in Slack.
+Dirk Jan van Veen | 09:37
+Now of them are go.
+Arthur Wandzel | 09:53
+Travel more time.
+Okay, I got Slack. All right, so we're missing these two in Slack.
+Dirk Jan van Veen | 10:11
+Is TOSs.
+Arthur Wandzel | 10:14
+I don't remember what this is, Notion.
+Okay, so basically, it's real simple.
+We take these transcripts, we're going to archive the transcripts and Superbase, we're going to have company documents internal to SFAI.
+Dirk Jan van Veen | 10:23
+We think these transcripts. We're gonna kind of the transcripts and Superbase through second company.
+Arthur Wandzel | 10:35
+So these are going to be configuration docs, and we're going to pull it together in a command center. The command center is basically issued from Slack, so that means that we can issue a command from Slack, and what that's essentially going to do is you've got different commands.
+Dirk Jan van Veen | 10:44
+That's considering the issue coming through. And what that's essentially going to do is, you know, get the right advance.
+Arthur Wandzel | 10:51
+The first workflow is linear, where it's going to send a message to Linear on the basis of the transcripts and so on to derive some tickets.
+Dirk Jan van Veen | 10:51
+The first proflow is laer where it's going to send the mes linears on the basis of the unders rs and so on to.
+Arthur Wandzel | 11:04
+It's going to get a structured view of these tickets. So you know, like team project milestone issued title issued, description, time. We're going to have a time estimation aspect going forward.
+That way, the AI can understand timing as an unbiased reviewer of work, and then we're going to have the human sign off on it.
+Dirk Jan van Veen | 11:20
+But I can understand the typing of the review report and that human.
+Arthur Wandzel | 11:31
+So this is all going to be auto-structured. It's going to have a lot of human feedback, but we're going to incorporate that feedback and train the model.
+Dirk Jan van Veen | 11:35
+Them and incorporate them into.
+Arthur Wandzel | 11:40
+So that's a straightforward view of that.
+Dirk Jan van Veen | 11:40
+So that's a court. The second is a Notion that's linked to all the popular Notion studies that we obtain work system components that are used for to strategy closes.
+Arthur Wandzel | 11:42
+The second is a Notion bot that's going to auto-populate Notion sites that we use for consulting, and it's got the client uptake workflow table, competitor analysis. These are components that we use for the strategy workflows.
+And it's going to send the client information and the tickets to a centralized hub where we have APM bot that's going to basically do auto-digests of each project so that you can just pull up. Hey, what's the status update on? Let's say RX
+then you can say, okay, we have a demo at this date, blah.
+Dirk Jan van Veen | 12:23
+And you can say, okay, we have a demo. And changes that I've seen the projects for TIETS and selling developers to use.
+Arthur Wandzel | 12:28
+Here's the outstanding projects. For tickets and so on. Blockers to dos.
+Dirk Jan van Veen | 12:33
+So like the bullet points are actually yeah and retrieve and tissue and these schools destruct is the statement where you work purposes that you're checking in structure that way e during fas and 13 down more bos.
+Arthur Wandzel | 12:33
+So this will basically be your ability to pull up linear and notion information directly and into your model into your view on Slack.
+So all of this will allow us to have this command center on Slack that we're able to pull and retrieve and issue these commands to structure information. And then finally, the main thing that we're going to go for first is linear ticket structuring. That way we can get very fast and start taking on more builds.
+Yeah. So this whole thing is going to allow equity product contribution view. So that's what this is going to unlock and this is the secret superpower, which is that we really want to close the loop on products and launch them and commercialize them.
+Dirk Jan van Veen | 13:23
+So that's the this is going on and this is the secret superpower. You know, we are going to want to close a lot of projects launched on line.
+Arthur Wandzel | 13:32
+And so that's the art form that we want to start mining out.
+Dirk Jan van Veen | 13:32
+And so.
+Arthur Wandzel | 13:38
+Who funs?
+Dirk Jan van Veen | 13:40
+So this should just be giving us back a lot of time, which we can put into products. I would expect that AI might be able to write better linear tickets than myself in a hurry. So you should get more clarity too.
+Arthur Wandzel | 14:07
+But of course, it's not just going to go one way. We'll still have a feedback loop where we can just define our own tickets. This is... A lot of information is flowing from the human back into the machine so that we can make this more effective, but in a way, responsive to how we do things.
+Dirk Jan van Veen | 14:32
+To me, new things.
+Arthur Wandzel | 14:36
+So I'm really excited about this.
+Dirk Jan van Veen | 14:37
+I know the second but is to look, and it's so stricture and some resource which is saying that that's to build a product from scratch over time if the buyer is direct, I mean, years.
+Arthur Wandzel | 14:37
+I think that this is going to unlock a new kind of incentive structure based on products, which is exciting. That's the name of the game. That's the full vision of SFi Labs, that we're able to build products from scratch and commercialize them.
+That's something that's going to evolve over time because the bar is moving. We're actually seeing the moving bar. Three years ago, it was hard to write code with AI, now it can. Code can write
+think MTPS will be taken up soon. Then the next thing, sorry, PCS will be taken up, and the next thing will be MVPs. We're not there yet, but I think within two years, we'll be there.
+So we need to always stay ahead of the market. Yeah, this will allow us to automate things that are boring and slow and... Yeah, without further ado,
+let's get through our linear.
+Dirk Jan van Veen | 15:37
+Yeah.
+Arthur Wandzel | 15:38
+So.
+Dirk Jan van Veen | 15:40
+I will present.
+Here we go, projects.
+Arthur Wandzel | 15:55
+Five.
+Dirk Jan van Veen | 15:59
+Okay, I want first to look at that, what sort of announcement. So, when we have a new issue, we now have this prime estimate.
+Well, it's not exactly a time estimate. It's more of an effort estimate, and they're based on a Fibonacci increase, which is like... Much better with humans. It is granular when it's small and it gets bigger as it fans out. I probably want to add a 13th point here.
+The reason is that this will allow us to measure how many tasks we are as a team able to complete in a week. Then we can have a better, more nuanced view on how big different projects are and how much time we have for the week ahead.
+So this will allow us to just measure it, and it's designed to be extracted and abstracted from that. It's just a way to estimate our work.
+So we're going to include those in tickets going forward. Looking at that back-kicked off this week went very well and now we're going to get access to their platform, get access to their resources but doesn't have anything yet. I saw a comment here, Nash, on this sandbox. We're going to define that.
+Arthur Wandzel | 18:20
+Albmed kicked off. I'm transferring that to you.
+Dirk Jan van Veen | 18:24
+Yup. Team Tina is not yet kicking off, right?
+Arthur Wandzel | 18:30
+No, we're forestalled in that project. She's competitor analysis stuff.
+Dirk Jan van Veen | 18:38
+Yeah, true. Tax planner is either kicking off or not kicking off at all. Well, they didn't show up to the meeting, but they did put us in touch with their other dev team, so we don't know what to make of that. Greenpeak hasn't.
+Arthur Wandzel | 19:01
+Well, let's start from the top. What do we got to do this week?
+Dirk Jan van Veen | 19:13
+Alpha. Maette's gonna kick off. This is an AI-heavy start, and then we will get into a regular build, so I'm gonna involve Nash here. Affirm Health. This is a high-intensity project, so I'll get you on this. Nash. These people want to meet twice a week.
+We've scoped out a detailed architecture here. I'm actually going to show you now. Then, we can go into a little bit more detail later.
+What they want is a chatbot that helps people complete a form. The most important part here is that we are going to proactively guide the conversation. The way we're going to do that is have all the answers of the chatbot evaluated first by two reviewer agents.
+So basically, we need to add an extra layer to the agent. When it creates the next response, then that next response is first evaluated by the reviewer agent and it's going to say yes or no. If it says no, then it gives feedback on how it should be changed. Yup, so that's very simple.
+I've defined the JSON structure there, and we're going to do a little bit of help today on crafting the prompts for this, and then basically, I will hand it off to you tonight, San Francisco time. Then, we'll need to build it tomorrow, and then I'm going to look at it again.
+Then, probably we'll have a bit of extra review, and then it needs to be ready for Wednesday. So this turned in.
+Arthur Wandzel | 22:05
+Sounds good.
+Dirk Jan van Veen | 22:06
+Yeah, this is a high priority.
+Arthur Wandzel | 22:11
+Seven.
+Dirk Jan van Veen | 22:15
+Project X, are we going to scope that today? We will get you a reviewer and the extra developer on this project. We have Rx Pharmacy, which we managed to extend the contract, which is great.
+What we're blocked on right now is we need feedback from Adam to actually forward his emails. I actually think the most effective way to do this, Arthur, is to schedule a meeting with him and go through it one by one. I'm happy to do it. Or if you want to... It's good.
+Arthur Wandzel | 23:07
+I think if he doesn't respond to us by Wednesday, we can just dig into his emails on BA.
+Dirk Jan van Veen | 23:15
+Y. So. So. We don't have access to that.
+Arthur Wandzel | 23:21
+We don't have access to his super base.
+Dirk Jan van Veen | 23:24
+No, that's what I understood from you, right? Nash.
+nash@sfaiconsultants.com | 23:28
+We never stored the emails on our Super.ba. So we store the metadata. We store what we generated: topics, priority, drafted response.
+Dirk Jan van Veen | 23:35
+With what to generate the responses? He has already well just have to date what the proposal is.
+nash@sfaiconsultants.com | 23:40
+But every time a user logs in, they fetch their own Gmail to stay up to date.
+So what they proposed is we can introduce that we can store it.
+Dirk Jan van Veen | 23:48
+We can enjpte it. We can store it as well.
+nash@sfaiconsultants.com | 23:50
+Well he... We just need to log in one more time just to...
+So we pick it up. We can do that if that's the easiest way.
+Arthur Wandzel | 24:02
+Well, if we don't currently have it, yeah, we're blocked on him then.
+Dirk Jan van Veen | 24:08
+We should do it, but we should disclose it to him.
+Arthur Wandzel | 24:12
+Yeah, that sounds good.
+Dirk Jan van Veen | 24:13
+Yeah, so we move forward, and then next time we will disclose it to him and we'll book a meeting with him if he hasn't forwarded more emails. Or vitality was going great. Thanks for all the front-end work. We have a few more finishing touches, which actually I will go over because it's efficient.
+They were very happy. The thing that we want to add is maybe we can make this chatbot a little bit taller. Do you think that's possible?
+nash@sfaiconsultants.com | 25:51
+Yeah, we can make it resizable, if that's something I would like.
+Dirk Jan van Veen | 25:57
+Yeah, that would actually be... I think that would be great for many customers if we could just eliminate that sized question entirely and then it becomes mod.
+nash@sfaiconsultants.com | 26:05
+Yeah, they can grab the edge for left, right, up, down.
+Dirk Jan van Veen | 26:11
+Yeah, fantastic. Thank you for adding this part. We need to follow up with Masimo. They were wanting a different font. I think it was Sensorif Semi Bold, but I'll send you the font.
+nash@sfaiconsultants.com | 26:32
+I saw the message. This is the same font, but it's not bold or medium.
+Dirk Jan van Veen | 26:38
+Yeah, that was good. Then, if we give me a story about why not just any question...
+They liked this a lot, which was good.
+nash@sfaiconsultants.com | 27:35
+That's a long wait.
+Dirk Jan van Veen | 27:37
+Yeah.
+That's because it's deployed on their site, right? This is not on our side.
+nash@sfaiconsultants.com | 27:55
+If I had to guess, it's on our side.
+Dirk Jan van Veen | 27:58
+Okay, so just the retrieval takes a long time.
+nash@sfaiconsultants.com | 28:00
+The answer is Trible.
+Dirk Jan van Veen | 28:06
+How quality control that.
+Speaker 3 | 28:13
+This seems a lot longer than usual.
+nash@sfaiconsultants.com | 28:22
+Still waiting for an answer. Any kind of answer from server?
+Dirk Jan van Veen | 28:30
+It is coming through eventually. But yeah, we need to work on the latency here. We need to investigate what's going on
+with the formatting of these questions. We need to separate out this last question and we need to separate out this.
+nash@sfaiconsultants.com | 28:57
+MI just fixed it.
+Dirk Jan van Veen | 28:58
+So I think that's what you fixed on Art May as well?
+nash@sfaiconsultants.com | 29:05
+I'm just going to disperse to other projects.
+Dirk Jan van Veen | 29:09
+Yup. And then this export is great, but they want it in .doc files, if that's possible.
+nash@sfaiconsultants.com | 29:18
+They think you formatted your question wrong. Where? I said it's already pf.
+Dirk Jan van Veen | 29:28
+Okay, so IIIII put p sorry, I made the you said the ticket. I want it in doc so that those are the changes for. Or Vitality. I'll make tickets for it. Plastic GAs is bumped to next week magma I saw your video awesome looks great is it deployed okay? Great rocket takeoffs they need to some small bug fix. My data move is great they just need the next thing. Here we have our. Our alpha machine.
+And this one is going into queue. This is this rename alphabet SP workflow.
+I think the high level takea takeaway from is as I looked at all the different projects on the docket today, which this week, which is nine. And if I count four four hours and a bit per project, if I delegate, it means I pretty much have to delegate everything, which is not ideal.
+But I'm gonna. I'm gonna ask for a lot of help. So roughly we want you, Jonathan to go to take over Rocket and then keep your support on or vitality. I will have Nash probably on six projects at the moment.
+And then we want to get the other guy working on Project X. Becked and another one that's coming through. So that's it. At a high level.
+Speaker 3 | 31:56
+Yeah. Great. Sounds good from me.
+nash@sfaiconsultants.com | 32:00
+What do we know about the new guy, way?
+Dirk Jan van Veen | 32:03
+He's from Serbia, Yes.
+Arthur Wandzel | 32:08
+Yeah, we wanted to get.
+Dirk Jan van Veen | 32:08
+In.
+nash@sfaiconsultants.com | 32:12
+What are the odds is that good? Is they're gonna do.
+Arthur Wandzel | 32:16
+It's good. Yeah, we want... Serbians are the best people in the world. We found, so we'll see. We have to give him a project, but basically his profile is he's a platform AI platform engineer, more full-stack leaning, he wanted. He's senior. He's a senior developer, married man with a kid, so he'll be our oldest member, but great guy. He worked with a lot of great companies, including SugarCRM, which is a SF company, and was interested in doing productization stuff.
+So I said, "Hey, that's a great alignment, so let's see how we can work together." I'm thinking, actually, I think you've got more front-end flair. He might be more of a backend guy. So platform back-end stuff.
+I think now the reason why we wanted to bring them on is now we have more capacity. So now it's on my side to start pumping in more projects and getting the revenue up.
+Dirk Jan van Veen | 33:28
+Yeah, so this is our base that we're building.
+Arthur Wandzel | 33:29
+Just always. Yeah.
+Dirk Jan van Veen | 33:34
+So the golden goose that lays the eggs for the product side is your connection with the market. So our consulting part is that connection with the market where we're speaking to real people with real use cases that they're willing to pay for.
+When we spin those out, we already have our first customer and our first case study when we go and market our products.
+Arthur Wandzel | 33:58
+No.
+Dirk Jan van Veen | 34:00
+And so it's great. It was a deliberate search to find somebody from Europe.
+Yeah. So we don't really want to be anywhere in Europe that is fine, but we don't want to be spread thin across time zones. I've worked with a lot of Asian developers, and they're great, but they don't have that finishing touch sense.
+Since we are putting a premium on consulting in the market, we need to keep our level high.
+Arthur Wandzel | 34:43
+Alright guys, well, let's stay sharp, we gotta move fast. Yeah, it's a matter of going bigger, going home. So this is it. So we have a shot right now at productization, and we can't lose sight of that.
+That's where we want to go. So let's go there.
+Speaker 3 | 35:06
+Do we have any ideas of products we want to build besides Ax Pharmacy? And I know you... My data move. Possibly.
+Dirk Jan van Veen | 35:15
+Yeah. My data move is a very interesting one because we need to align their interests with our interests. They're getting the best deal, they're getting the highest value for the lowest price.
+It is insane. And, yeah, but maybe we need a partner in some way. But that is a high-potential product. So it's basically doing automatic data migrations.
+Arthur Wandzel | 35:52
+Okay, cool.
+Dirk Jan van Veen | 35:53
+Yeah.
+Speaker 3 | 35:56
+Sweet. Well, yeah. Excited to see how that turns out.
+Dirk Jan van Veen | 36:03
+And then I think there's a whole play in the meeting recorder space, every meeting recorder is growing.
+Speaker 3 | 36:05
+S.
+Dirk Jan van Veen | 36:13
+Like there's a product-market fit, it's for AI encoding tools like Clockwork, Code, Cursor, and every company is buying a meeting recorder.
+So if you're in that space, it's basically going up. But we need the right integration. So all the big venture-funded players are going for sales because sales is such a big... Every company has sales, and that's where the money is.
+So they're all going after that. And there's a bunch of hundred million-dollar opportunities there that VC-backed companies can't go after. And that has to do with the integrations into very niche areas such as pharmaceuticals.
+So that's a flavor. But it's not certain that we're going to build those yet. Yeah, no.
+Arthur Wandzel | 37:09
+Right. Yeah. But yeah, again, we got to stay sharp and we got to keep pushing because, you know, it's I think from my side, OpenAI is getting pretty good, so we got to always be better.
+Dirk Jan van Veen | 37:23
+Yeah, we're going to use it and put one extra level on top. Yup. Okay, cool, yeah, that's it. Yeah. [Laughter] I'll text you about a firm health. health.
+Arthur Wandzel | 37:48
+See you in your respective universes.
+Dirk Jan van Veen | 37:57
+Nash.
+Arthur Wandzel | 37:58
+Yeah, universes. it's key. We had a business meeting with them, and the CTO tried to tank the project, so we have to prove that we're worth it. A little bit of digging to pull the project out of the grave.
+So let's see if we can pull it together.
+nash@sfaiconsultants.com | 38:15
+Then together. let's go above and beyond. beyond.
+Arthur Wandzel | 38:18
+Right? Okay.
+Dirk Jan van Veen | 38:20
+Okay.
+Arthur Wandzel | 38:20
+All Okay. right, guys, I'll be. be.
+Dirk Jan van Veen | 38:20
+Thank you.
