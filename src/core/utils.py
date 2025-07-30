@@ -3,6 +3,7 @@ Utility functions for Alpha Machine.
 """
 
 import json
+import yaml
 from pathlib import Path
 from typing import Dict, Any, List
 
@@ -96,4 +97,17 @@ def create_directory_if_not_exists(directory: Path) -> None:
         directory.mkdir(parents=True, exist_ok=True)
     except Exception as e:
         print(f"Error creating directory {directory}: {e}")
-        raise 
+        raise
+
+
+def load_prompts(prompts_file: Path) -> Dict[str, Any]:
+    """Load prompts from YAML file."""
+    try:
+        with open(prompts_file, 'r', encoding='utf-8') as file:
+            return yaml.safe_load(file)
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Prompts file not found: {prompts_file}")
+    except yaml.YAMLError as e:
+        raise ValueError(f"Error parsing prompts file: {e}")
+    except Exception as e:
+        raise ValueError(f"Error reading prompts file: {e}") 

@@ -5,7 +5,7 @@ Transcript service for loading and managing meeting transcripts.
 import yaml
 from pathlib import Path
 from typing import Dict, Any, Tuple
-from ..config import Config
+from ..core.config import Config
 
 
 class TranscriptService:

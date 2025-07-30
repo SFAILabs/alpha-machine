@@ -4,8 +4,8 @@ Linear API service for managing projects, issues, and workspace data.
 
 import requests
 from typing import List, Optional, Dict, Any
-from ..models import LinearProject, LinearMilestone, LinearIssue, LinearContext
-from ..config import Config
+from ..core.models import LinearProject, LinearMilestone, LinearIssue, LinearContext
+from ..core.config import Config
 
 
 class LinearService:
@@ -201,6 +201,86 @@ class LinearService:
             print(f"Error getting user ID: {e}")
             return None
     
+    def get_milestone_id(self, milestone_name: str) -> Optional[str]:
+        """Get milestone ID by name."""
+        query = """
+        query {
+            projectMilestones {
+                nodes {
+                    id
+                    name
+                    project {
+                        name
+                    }
+                }
+            }
+        }
+        """
+        
+        try:
+            data = self._make_request(query)
+            milestones = data['data']['projectMilestones']['nodes']
+            for milestone in milestones:
+                if milestone['name'] == milestone_name:
+                    return milestone['id']
+            return None
+        except Exception as e:
+            print(f"Error getting milestone ID: {e}")
+            return None
+    
+    def create_milestone(self, milestone_name: str, project_id: str, description: str = "") -> Optional[str]:
+        """Create a new milestone (SAFETY CHECKED - Jonathan Test Space only)."""
+        # CRITICAL SAFETY CHECK: Prevent writing to SFAI workspace
+        if self.api_key == Config.LINEAR_API_KEY:
+            raise ValueError(
+                "🚨 CRITICAL SAFETY ERROR: Attempting to create milestone in SFAI workspace! "
+                "This is FORBIDDEN. Use TEST_LINEAR_API_KEY for Jonathan Test Space only."
+            )
+        
+        print(f"✅ SAFETY CHECK PASSED: Creating milestone in Jonathan Test Space")
+        
+        mutation = """
+        mutation CreateProjectMilestone($input: ProjectMilestoneCreateInput!) {
+            projectMilestoneCreate(input: $input) {
+                success
+                projectMilestone {
+                    id
+                    name
+                    description
+                }
+            }
+        }
+        """
+        
+        variables = {
+            "input": {
+                "name": milestone_name,
+                "description": description,
+                "projectId": project_id
+            }
+        }
+        
+        try:
+            result = self._make_request(mutation, variables)
+            if result.get('data', {}).get('projectMilestoneCreate', {}).get('success'):
+                return result['data']['projectMilestoneCreate']['projectMilestone']['id']
+            else:
+                print(f"Error creating milestone: {result}")
+                return None
+        except Exception as e:
+            print(f"Error creating milestone: {e}")
+            return None
+    
+    def get_or_create_milestone(self, milestone_name: str, project_id: str, description: str = "") -> Optional[str]:
+        """Get existing milestone ID or create new milestone."""
+        # First try to get existing milestone
+        milestone_id = self.get_milestone_id(milestone_name)
+        if milestone_id:
+            return milestone_id
+        
+        # Create new milestone if not found
+        return self.create_milestone(milestone_name, project_id, description)
+    
     def get_or_create_project(self, project_name: str, project_description: str = "") -> Optional[str]:
         """Get existing project ID or create new project."""
         # First try to get existing project
@@ -229,7 +309,15 @@ class LinearService:
             return None
     
     def _create_project(self, project_name: str, project_description: str = "") -> Optional[str]:
-        """Create a new project."""
+        """Create a new project (SAFETY CHECKED - Jonathan Test Space only)."""
+        # CRITICAL SAFETY CHECK: Prevent writing to SFAI workspace
+        if self.api_key == Config.LINEAR_API_KEY:
+            raise ValueError(
+                "🚨 CRITICAL SAFETY ERROR: Attempting to create project in SFAI workspace! "
+                "This is FORBIDDEN. Use TEST_LINEAR_API_KEY for Jonathan Test Space only."
+            )
+        
+        print(f"✅ SAFETY CHECK PASSED: Creating project in Jonathan Test Space")
         team_id = self.get_team_id()
         if not team_id:
             print(f"Error: Team '{self.team_name}' not found")
@@ -270,7 +358,23 @@ class LinearService:
             return None
     
     def create_issue(self, issue_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Create a new issue."""
+        """Create a new issue (SAFETY CHECKED - Jonathan Test Space only)."""
+        # CRITICAL SAFETY CHECK: Prevent writing to SFAI workspace
+        if self.api_key == Config.LINEAR_API_KEY:
+            raise ValueError(
+                "🚨 CRITICAL SAFETY ERROR: Attempting to write to SFAI workspace! "
+                "This is FORBIDDEN. Use TEST_LINEAR_API_KEY for Jonathan Test Space only. "
+                f"Current API key: {self.api_key[:10]}..."
+            )
+        
+        # Additional safety check - ensure we're using TEST_LINEAR_API_KEY
+        if not Config.TEST_LINEAR_API_KEY or self.api_key != Config.TEST_LINEAR_API_KEY:
+            raise ValueError(
+                "🚨 SAFETY ERROR: Must use TEST_LINEAR_API_KEY for writing tickets. "
+                "SFAI workspace is READ-ONLY."
+            )
+        
+        print(f"✅ SAFETY CHECK PASSED: Writing to Jonathan Test Space with TEST_LINEAR_API_KEY")
         team_id = self.get_team_id()
         assignee_id = self.get_user_id(issue_data['assign_team_member'])
         
@@ -284,7 +388,24 @@ class LinearService:
         # Get or create project
         project_id = None
         if issue_data.get('project'):
+            print(f"   📁 Getting/creating project: {issue_data['project']}")
             project_id = self.get_or_create_project(issue_data['project'])
+            if project_id:
+                print(f"   ✅ Project ID: {project_id}")
+            else:
+                print(f"   ❌ Failed to get/create project: {issue_data['project']}")
+        
+        # Get or create milestone
+        milestone_id = None
+        if issue_data.get('milestone') and project_id:
+            print(f"   🎯 Getting/creating milestone: {issue_data['milestone']}")
+            milestone_id = self.get_or_create_milestone(issue_data['milestone'], project_id)
+            if milestone_id:
+                print(f"   ✅ Milestone ID: {milestone_id}")
+            else:
+                print(f"   ❌ Failed to get/create milestone: {issue_data['milestone']}")
+        elif issue_data.get('milestone') and not project_id:
+            print(f"   ⚠️  Skipping milestone creation - no project ID available")
         
         # Convert priority to Linear format (0=highest, 4=lowest)
         priority = int(issue_data['priority']) if issue_data['priority'] else 2
@@ -337,6 +458,10 @@ class LinearService:
         if project_id:
             variables["input"]["projectId"] = project_id
         
+        # Add milestone if available
+        if milestone_id:
+            variables["input"]["projectMilestoneId"] = milestone_id
+        
         try:
             result = self._make_request(mutation, variables)
             if result.get('data', {}).get('issueCreate', {}).get('success'):
@@ -349,7 +474,15 @@ class LinearService:
             return None
     
     def _delete_issue(self, issue_id: str) -> bool:
-        """Delete an issue by ID."""
+        """Delete an issue by ID (SAFETY CHECKED - Jonathan Test Space only)."""
+        # CRITICAL SAFETY CHECK: Prevent writing to SFAI workspace
+        if self.api_key == Config.LINEAR_API_KEY:
+            raise ValueError(
+                "🚨 CRITICAL SAFETY ERROR: Attempting to delete issue in SFAI workspace! "
+                "This is FORBIDDEN. Use TEST_LINEAR_API_KEY for Jonathan Test Space only."
+            )
+        
+        print(f"✅ SAFETY CHECK PASSED: Deleting issue in Jonathan Test Space")
         mutation = """
         mutation DeleteIssue($id: String!) {
             issueDelete(id: $id) {

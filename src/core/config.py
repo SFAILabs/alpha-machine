@@ -15,7 +15,7 @@ class Config:
     """Configuration class for managing environment variables and settings."""
     
     # Project paths
-    PROJECT_ROOT = Path(__file__).parent.parent
+    PROJECT_ROOT = Path(__file__).parent.parent.parent
     SRC_DIR = PROJECT_ROOT / "src"
     DATA_DIR = PROJECT_ROOT / "data"
     
@@ -31,8 +31,19 @@ class Config:
     LINEAR_TEAM_NAME = os.getenv("LINEAR_TEAM_NAME", "Jonathan Test Space")
     LINEAR_DEFAULT_ASSIGNEE = os.getenv("LINEAR_DEFAULT_ASSIGNEE", "jonny34923@gmail.com")
     
+    # Supabase Configuration
+    SUPABASE_URL = os.getenv("SUPABASE_URL")
+    SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+    
+    # Slack Configuration
+    SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_TOKEN")
+    SLACK_SIGNING_SECRET = os.getenv("SLACK_SIGNING_SECRET")
+    
+    # Notion Configuration
+    NOTION_TOKEN = os.getenv("NOTION_TOKEN")
+    
     # File paths
-    PROMPTS_FILE = SRC_DIR / "prompts.yml"
+    PROMPTS_FILE = SRC_DIR / "core" / "prompts.yml"
     TRANSCRIPT_FILE = PROJECT_ROOT / "sfai_dev_standup_transcript.txt"
     OUTPUT_FILE = PROJECT_ROOT / "generated_tickets.json"
     
@@ -62,7 +73,7 @@ class Config:
     
     @classmethod
     def get_linear_config(cls) -> Dict[str, Any]:
-        """Get Linear configuration as a dictionary."""
+        """Get Linear configuration for SFAI workspace (READ ONLY)."""
         return {
             "api_key": cls.LINEAR_API_KEY,
             "team_name": cls.LINEAR_TEAM_NAME,
@@ -71,7 +82,7 @@ class Config:
     
     @classmethod
     def get_test_linear_config(cls) -> Dict[str, Any]:
-        """Get test Linear configuration as a dictionary."""
+        """Get Linear configuration for Jonathan Test Space (WRITE ONLY)."""
         return {
             "api_key": cls.TEST_LINEAR_API_KEY,
             "team_name": cls.LINEAR_TEAM_NAME,

@@ -1,66 +1,129 @@
 # Alpha Machine
 
-AI-powered transcript processing and Linear ticket generation tool.
+AI-powered transcript processing and project management system with advanced Slack bot integration.
 
 ## Overview
 
-Alpha Machine is a sophisticated internal tool that processes meeting transcripts using AI and automatically generates structured Linear tickets. It's designed for heavy internal use with a focus on maintainability, readability, and extensibility.
+Alpha Machine is a sophisticated internal tool that processes meeting transcripts using AI, manages Linear tickets, and provides an intelligent Slack bot interface. It's designed for heavy internal use with a focus on maintainability, readability, and extensibility.
 
-## Project Structure
+## Architecture
+
+The project follows senior engineer practices with clear separation of concerns:
 
 ```
 alpha-machine/
 ├── src/                          # Main source code
-│   ├── __init__.py              # Package initialization
-│   ├── config.py                # Configuration management
-│   ├── models.py                # Data models and structures
-│   ├── orchestrator.py          # Main workflow orchestrator
-│   ├── utils.py                 # Utility functions
-│   ├── prompts.yml              # AI prompts configuration
-│   └── services/                # Service layer
-│       ├── __init__.py          # Services package
-│       ├── linear_service.py    # Linear API interactions
-│       ├── openai_service.py    # OpenAI API interactions
-│       └── transcript_service.py # Transcript processing
-├── main.py                      # Application entry point
-├── config.py                    # Legacy config (deprecated)
-├── process_transcript.py        # Legacy script (deprecated)
+│   ├── core/                     # Core components
+│   │   ├── __init__.py          # Core package exports
+│   │   ├── config.py            # Configuration management
+│   │   ├── models.py            # Data models and structures
+│   │   ├── utils.py             # Utility functions
+│   │   └── prompts.yml          # AI prompts configuration
+│   ├── services/                # Service layer
+│   │   ├── __init__.py          # Services package exports
+│   │   ├── ai_service.py        # OpenAI API interactions
+│   │   ├── supabase_service.py  # Supabase database operations
+│   │   ├── linear_service.py    # Linear API interactions
+│   │   ├── slack_service.py     # Slack API interactions
+│   │   ├── notion_service.py    # Notion API interactions
+│   │   └── transcript_service.py # Transcript processing utilities
+│   ├── flows/                   # Business logic flows
+│   │   ├── __init__.py          # Flows package exports
+│   │   ├── transcript_flow/     # Transcript processing flow
+│   │   │   ├── __init__.py
+│   │   │   ├── processor.py     # AI filtering and storage
+│   │   │   └── webhook_handler.py # Webhook endpoint
+│   │   ├── slack_flow/          # Slack bot flow
+│   │   │   ├── __init__.py
+│   │   │   └── bot.py           # Advanced Slack bot with AI commands
+│   │   ├── linear_flow/         # Linear ticket management
+│   │   │   ├── __init__.py
+│   │   │   └── orchestrator.py  # Main workflow orchestrator
+│   │   └── notion_flow/         # Notion integration
+│   │       ├── __init__.py
+│   │       └── processor.py     # Notion document processing
+│   └── __init__.py              # Main package exports
+├── main.py                      # Linear workflow entry point
+├── slack_bot.py                 # Slack bot entry point
+├── webhook_server.py            # Transcript webhook server
 ├── pyproject.toml              # Project configuration
 ├── uv.lock                     # Dependency lock file
 └── README.md                   # This file
 ```
 
-## Architecture
+## Core Components
 
-### Core Components
+### 1. Core Package (`src/core/`)
+- **Config**: Centralized configuration management with environment variable handling
+- **Models**: Type-safe data models using Pydantic and dataclasses
+- **Utils**: Shared utility functions and prompt loading
+- **Prompts**: YAML-based AI prompt configuration
 
-1. **Orchestrator** (`src/orchestrator.py`)
-   - Main coordinator for the entire workflow
-   - Manages service initialization and workflow execution
-   - Handles error handling and result aggregation
+### 2. Services Package (`src/services/`)
+- **OpenAIService**: OpenAI API integration with structured output
+- **SupabaseService**: Database operations for transcripts and metadata
+- **LinearService**: Linear API integration for project management
+- **SlackService**: Slack API integration for messaging and user info
+- **NotionService**: Notion API integration for document management
+- **TranscriptService**: Transcript loading and prompt formatting
 
-2. **Services** (`src/services/`)
-   - **LinearService**: Handles all Linear API interactions
-   - **OpenAIService**: Manages OpenAI API calls and response parsing
-   - **TranscriptService**: Handles transcript loading and prompt formatting
+### 3. Flows Package (`src/flows/`)
+- **TranscriptFlow**: AI-powered transcript filtering and storage
+- **SlackFlow**: Advanced Slack bot with comprehensive AI commands
+- **LinearFlow**: Linear ticket generation and management
+- **NotionFlow**: Notion document processing and requirements extraction
 
-3. **Models** (`src/models.py`)
-   - Structured data classes for all entities
-   - Type-safe data handling throughout the application
-   - Clear separation between API responses and internal representations
+## Key Features
 
-4. **Configuration** (`src/config.py`)
-   - Centralized configuration management
-   - Environment variable handling
-   - Path management and validation
+### Transcript Processing
+- **AI Filtering**: Automatically filters commercial/monetary information from transcripts
+- **Supabase Storage**: Stores filtered transcripts with timestamps and metadata
+- **Webhook Integration**: Receives transcripts from Krisp via Zapier
+- **Context Preservation**: Maintains meeting context for AI analysis
 
-### Key Features
+### Advanced Slack Bot
+The Slack bot provides comprehensive AI-powered commands:
 
-- **Separation of Concerns**: Each service has a single responsibility
-- **Type Safety**: Full type hints throughout the codebase
-- **Error Handling**: Comprehensive error handling at all levels
-- **Extensibility**: Easy to add new services or modify existing ones
-- **Maintainability**: Clear structure and documentation
+#### `/chat [question]`
+- AI conversation with full context from recent meetings and Linear workspace
+- Accesses filtered transcript data and current project status
+- Provides contextual responses based on available information
+
+#### `/summarize last @meeting @timestamp`
+- Generates meeting summaries with key decisions, action items, and deadlines
+- Supports timestamp-based meeting selection
+- Extracts commercial/monetary information discussed
+
+#### `/summarize client [client_name]`
+- Comprehensive client status summary with deadlines and progress
+- Integrates Linear projects, Notion documents, and client metadata
+- Shows project timelines and team assignments
+
+#### `/create [description]`
+- AI-powered Linear ticket creation with context analysis
+- Suggests appropriate tickets based on meeting context and user input
+- Provides priority, time estimates, and assignment recommendations
+
+#### `/teammember @username`
+- Team member information with active issues and project assignments
+- Shows recent completed work and current status
+- Integrates Slack user info with Linear work data
+
+#### `/weekly-summary`
+- Automatic weekly summary generation for stakeholders
+- Combines meeting data, project progress, and team performance
+- Professional format suitable for client communication
+
+### Linear Integration
+- **Workspace Context**: Real-time Linear workspace state analysis
+- **Ticket Generation**: AI-powered ticket creation from meeting context
+- **Project Management**: Comprehensive project and milestone tracking
+- **Team Coordination**: Issue assignment and progress monitoring
+
+### Notion Integration
+- **Document Processing**: Extracts requirements and specifications from Notion pages
+- **Client Context**: Retrieves client documents and project information
+- **Requirements Analysis**: AI-powered analysis of Notion content for Linear tickets
 
 ## Usage
 
@@ -75,27 +138,67 @@ alpha-machine/
    ```bash
    # Required
    export OPENAI_API_KEY="your-openai-api-key"
+   export SUPABASE_URL="your-supabase-url"
+   export SUPABASE_KEY="your-supabase-key"
    
-   # Optional (for Linear integration)
+   # Slack Bot
+   export SLACK_BOT_TOKEN="your-slack-bot-token"
+   export SLACK_SIGNING_SECRET="your-slack-signing-secret"
+   
+   # Linear (Optional)
    export LINEAR_API_KEY="your-linear-api-key"
-   export TEST_LINEAR_API_KEY="your-test-linear-api-key"
    export LINEAR_TEAM_NAME="Your Team Name"
    export LINEAR_DEFAULT_ASSIGNEE="user@example.com"
+   
+   # Notion (Optional)
+   export NOTION_TOKEN="your-notion-token"
    ```
 
 ### Running the Application
 
+#### 1. Linear Workflow (Legacy)
 ```bash
-# Run the full workflow
+# Run the full Linear workflow
 uv run main.py
-
-# Or run directly with Python
-python main.py
 ```
 
-### Configuration Options
+#### 2. Slack Bot
+```bash
+# Start the Slack bot server
+uv run slack_bot.py
+```
 
-The application supports various configuration options via environment variables:
+#### 3. Transcript Webhook Server
+```bash
+# Start the webhook server for transcript processing
+uv run webhook_server.py
+```
+
+### Slack Bot Commands
+
+Once the Slack bot is running, you can use these commands in any Slack channel:
+
+```bash
+# AI conversation with context
+/chat What was discussed about the client project in recent meetings?
+
+# Meeting summary
+/summarize last @meeting @14:30
+
+# Client status
+/summarize client acme_corp
+
+# Create tickets
+/create tickets for the new feature requirements
+
+# Team member info
+/teammember @john_doe
+
+# Weekly summary
+/weekly-summary
+```
+
+## Configuration Options
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -103,10 +206,14 @@ The application supports various configuration options via environment variables
 | `OPENAI_MODEL` | `gpt-4o-mini` | OpenAI model to use |
 | `OPENAI_MAX_TOKENS` | `4000` | Maximum tokens for API calls |
 | `OPENAI_TEMPERATURE` | `0.1` | Temperature for AI responses |
-| `LINEAR_API_KEY` | Optional | Linear API key for main workspace |
-| `TEST_LINEAR_API_KEY` | Optional | Linear API key for test workspace |
+| `SUPABASE_URL` | Required | Supabase project URL |
+| `SUPABASE_KEY` | Required | Supabase service role key |
+| `SLACK_BOT_TOKEN` | Required | Slack bot user OAuth token |
+| `SLACK_SIGNING_SECRET` | Required | Slack app signing secret |
+| `LINEAR_API_KEY` | Optional | Linear API key |
 | `LINEAR_TEAM_NAME` | `Jonathan Test Space` | Default team name |
 | `LINEAR_DEFAULT_ASSIGNEE` | `jonny34923@gmail.com` | Default assignee email |
+| `NOTION_TOKEN` | Optional | Notion integration token |
 
 ## Development
 
@@ -114,12 +221,19 @@ The application supports various configuration options via environment variables
 
 1. Create a new service class in `src/services/`
 2. Follow the existing pattern with clear separation of concerns
-3. Add the service to the orchestrator if needed
-4. Update the services `__init__.py` file
+3. Add the service to `src/services/__init__.py`
+4. Update the main `src/__init__.py` file
+
+### Adding New Flows
+
+1. Create a new flow directory in `src/flows/`
+2. Implement the flow logic with proper error handling
+3. Add the flow to `src/flows/__init__.py`
+4. Update the main `src/__init__.py` file
 
 ### Adding New Models
 
-1. Create new dataclasses in `src/models.py`
+1. Create new dataclasses in `src/core/models.py`
 2. Use type hints and provide clear documentation
 3. Include serialization methods if needed
 
@@ -127,26 +241,58 @@ The application supports various configuration options via environment variables
 
 The project includes test files for various components:
 - `test_linear_full_workflow.py`: End-to-end workflow testing
-- `test_linear_write.py`: Linear API testing
+- `structured_project_view.py`: Project structure analysis
 
-## Migration from Legacy Code
+## Database Schema
 
-The original `process_transcript.py` script has been refactored into a modular architecture:
+### Supabase Tables
 
-- **Linear API functions** → `LinearService` class
-- **OpenAI functions** → `OpenAIService` class  
-- **File loading functions** → `TranscriptService` class
-- **Main workflow** → `AlphaMachineOrchestrator` class
+#### `transcripts`
+- `id`: Primary key
+- `raw_transcript`: Full meeting transcript
+- `filtered_data`: AI-filtered commercial/monetary data
+- `metadata`: Meeting metadata (date, participants, etc.)
+- `created_at`: Timestamp
+- `processed`: Boolean flag
 
-All functionality has been preserved while improving maintainability and extensibility.
+#### `meeting_summaries`
+- `id`: Primary key
+- `transcript_id`: Reference to transcript
+- `summary`: AI-generated summary
+- `key_points`: Extracted key points
+- `action_items`: Identified action items
+- `created_at`: Timestamp
+
+#### `client_status`
+- `id`: Primary key
+- `client_name`: Client identifier
+- `status`: Current project status
+- `deadline`: Project deadline
+- `progress`: Progress percentage
+- `updated_at`: Last update timestamp
 
 ## Deployment
 
-The modular structure makes deployment straightforward:
+### Docker Deployment
+```dockerfile
+FROM python:3.13-slim
 
-1. **Docker**: Easy to containerize with clear service boundaries
-2. **Cloud Functions**: Services can be deployed independently
-3. **Microservices**: Each service can be deployed separately if needed
+WORKDIR /app
+COPY . .
+
+RUN pip install uv
+RUN uv sync --frozen
+
+EXPOSE 3000 5000
+
+CMD ["uv", "run", "slack_bot.py"]
+```
+
+### Environment Setup
+1. Set all required environment variables
+2. Configure Slack app with slash commands
+3. Set up Supabase database with required tables
+4. Configure Linear and Notion integrations
 
 ## Contributing
 
@@ -157,6 +303,7 @@ When contributing to this project:
 3. Include comprehensive error handling
 4. Update documentation for any new features
 5. Add tests for new functionality
+6. Use the established service/flow architecture
 
 ## License
 

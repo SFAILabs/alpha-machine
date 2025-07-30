@@ -13,17 +13,19 @@ transcript_to_linear_tickets:
     - For each project/milestone mentioned, identify new issues that need to be created
     - For each new issue, identify the detailed tasks that need to be completed
     - For each issue, identify the major resources that are needed
-    - Only create new issues - do not create new projects or milestones
+    - Create new milestones when appropriate (e.g., "Q1 2025 Features", "Client Launch Phase", "Technical Debt Sprint")
+    - Only create new issues and milestones - do not create new projects
 
     # Reasoning Steps
     1. **Review existing Linear context** to understand current projects, milestones, and issues.  
     2. **Scan the transcript** to locate all distinct project mentions.  
     3. **For each project mentioned**, identify which existing Linear project it maps to.  
     4. **For each milestone discussed**, identify which existing milestone it maps to within the project.  
-    5. **Within each existing milestone**, identify new issues that need to be created based on the discussion.  
-    6. **For each new issue**, map it to the primary resources (people, tools, budget items) required.  
-    7. **Ensure all issues are associated with existing projects and milestones** - do not create new projects or milestones.  
-    8. **Organize your output**: create only new issues, ensuring they fit within existing project/milestone structure.
+    5. **Create new milestones when appropriate** based on the discussion (e.g., "Q1 2025 Features", "Client Launch Phase", "Technical Debt Sprint").  
+    6. **Within each milestone (existing or new)**, identify new issues that need to be created based on the discussion.  
+    7. **For each new issue**, map it to the primary resources (people, tools, budget items) required.  
+    8. **Ensure all issues are associated with existing projects** - do not create new projects.  
+    9. **Organize your output**: create new issues and milestones, ensuring they fit within existing project structure.
 
     # Output Format
     Respond with a JSON array of issues. Each issue should be structured as follows:

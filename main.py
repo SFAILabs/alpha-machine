@@ -5,14 +5,8 @@ Alpha Machine - AI-powered transcript processing and Linear ticket generation.
 Main entry point for the application.
 """
 
-import sys
-from pathlib import Path
-
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent / "src"))
-
-from src.orchestrator import AlphaMachineOrchestrator
-from src.utils import print_separator
+from src.flows.linear_flow.orchestrator import AlphaMachineOrchestrator
+from src.core.utils import print_separator
 
 
 def main():

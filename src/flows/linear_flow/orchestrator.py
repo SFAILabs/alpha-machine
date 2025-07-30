@@ -7,9 +7,11 @@ import time
 from typing import List, Dict, Any
 from pathlib import Path
 
-from .config import Config
-from .models import ProcessingResult, GeneratedIssue, LinearContext
-from .services import LinearService, OpenAIService, TranscriptService
+from ...core.config import Config
+from ...core.models import ProcessingResult, GeneratedIssue, LinearContext
+from ...services.linear_service import LinearService
+from ...services.ai_service import OpenAIService
+from ...services.transcript_service import TranscriptService
 
 
 class AlphaMachineOrchestrator:
@@ -116,14 +118,23 @@ class AlphaMachineOrchestrator:
             )
     
     def create_linear_issues(self, issues: List[GeneratedIssue]) -> List[Dict[str, Any]]:
-        """Create Linear issues from generated data."""
+        """Create Linear issues from generated data using TEST_LINEAR_API_KEY (Jonathan Test Space)."""
         if not issues:
             print("No issues to create")
+            return []
+        
+        # IMPORTANT: Use TEST_LINEAR_API_KEY for writing to Jonathan Test Space
+        # LINEAR_API_KEY is only for reading from SFAI workspace
+        if not Config.TEST_LINEAR_API_KEY:
+            print("❌ ERROR: TEST_LINEAR_API_KEY not configured")
+            print("   Cannot create tickets without TEST_LINEAR_API_KEY")
+            print("   This prevents accidentally writing to SFAI workspace")
             return []
         
         created_issues = []
         
         print(f"\nCreating {len(issues)} issues in Jonathan Test Space...")
+        print(f"✅ Using TEST_LINEAR_API_KEY to ensure we write to Jonathan Test Space, not SFAI")
         
         for i, issue in enumerate(issues, 1):
             # Hardcode assignee to jonny34923@gmail.com for test workspace

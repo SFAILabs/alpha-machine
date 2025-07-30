@@ -4,8 +4,8 @@ OpenAI service for AI-powered transcript processing.
 
 from typing import Dict, Any, List
 from openai import OpenAI
-from ..models import GeneratedIssue, GeneratedIssuesResponse
-from ..config import Config
+from ..core.models import GeneratedIssue, GeneratedIssuesResponse
+from ..core.config import Config
 
 
 class OpenAIService:
