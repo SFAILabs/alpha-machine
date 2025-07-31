@@ -1,0 +1,44 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "slackbot-service"
+version = "0.1.0"
+description = "Slack bot service for Alpha Machine"
+authors = [
+  { name = "Jonathan", email = "jonathan@example.com" },
+]
+license = { file = "LICENSE" }
+readme = "README.md"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "python-multipart",
+    "alphamachine-core",
+    "alphamachine-services"
+]
+
+[tool.uv.sources]
+alphamachine-core = { workspace = true }
+alphamachine-services = { workspace = true }
+
+[project.urls]
+"Homepage" = "https://github.com/your-repo/alpha-machine"
+"Bug Tracker" = "https://github.com/your-repo/alpha-machine/issues"
+
+[tool.rye]
+managed = true
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"] 

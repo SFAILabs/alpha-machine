@@ -403,5 +403,5 @@ COMMENT ON TABLE chat_sessions IS 'Stores chat session data for OpenAI Responses
 
 COMMENT ON COLUMN filtered_transcripts.redaction_count IS 'Number of commercial/monetary content redactions made by AI';
 COMMENT ON COLUMN filtered_transcripts.project_tags IS 'Array of project names mentioned in the transcript';
-COMMENT ON COLUMN filtered_transcripts.participants IS 'Array of participant email addresses or names';
+COMMENT ON COLUMN filtered_transcripts.participants IS 'Array of participant email addresses or names'; 
 COMMENT ON COLUMN chat_sessions.previous_response_id IS 'OpenAI response ID for conversation history management'; 

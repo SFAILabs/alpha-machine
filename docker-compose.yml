@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  transcript-service:
+    build:
+      context: ./services/transcript
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+    env_file:
+      - .env
+    volumes:
+      - ./services/transcript:/app
+    command: uvicorn transcript.main:app --host 0.0.0.0 --port 8000 --reload
+    
+  slack-service:
+    build:
+      context: ./services/slack
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      - PORT=8001
+    env_file:
+      - .env
+    volumes:
+      - ./services/slack:/app
+    command: uvicorn slack.main:app --host 0.0.0.0 --port 8001 --reload
+    
+  linear-service:
+    build:
+      context: ./services/linear
+      dockerfile: Dockerfile
+    ports:
+      - "8002:8002"
+    environment:
+      - PORT=8002
+    env_file:
+      - .env
+    volumes:
+      - ./services/linear:/app
+    command: uvicorn linear.main:app --host 0.0.0.0 --port 8002 --reload
+    
+  notion-service:
+    build:
+      context: ./services/notion
+      dockerfile: Dockerfile
+    ports:
+      - "8003:8003"
+    environment:
+      - PORT=8003
+    env_file:
+      - .env
+    volumes:
+      - ./services/notion:/app
+    command: uvicorn notion.main:app --host 0.0.0.0 --port 8003 --reload
+
+  # API Gateway (optional future enhancement)
+  # nginx:
+  #   image: nginx:alpine
+  #   ports:
+  #     - "80:80"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf
+  #   depends_on:
+  #     - transcript-service
+  #     - slack-service
+  #     - linear-service
+  #     - notion-service
+
+networks:
+  default:
+    driver: bridge 

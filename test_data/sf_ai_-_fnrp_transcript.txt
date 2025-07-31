@@ -1,0 +1,315 @@
+Speaker 2 | 00:22
+Yeah, no, we're pumped too, I think. I think we've done a good job of laying out the scope and helping everybody get comfortable with the vision here. I think making that last tweak to get the data, run the analysis on Salesforce.
+I think that was definitely the move that we needed to move things along and just get the project kicked off and get some traction and start to get the social equity from everybody. Like, "Wow,
+this is cool. We can really make an impact and change. Here's precisely where we're going to get that ROI." I think holding us to get to that point, I think in terms of moving the progress of the project forward and again, everybody what they want out of it, for you guys, you want to deliver good work and be compensated for that work.
+For us, we want the ROI, So.
+Arthur Wandzel | 01:27
+Yeah, we found a good.
+Speaker 2 | 01:29
+I think we found a good middle point there to get started. I think it's just on me and you guys to work together to get things going and provide some value here and some social equity to continue to keep us moving here.
+So, I'm excited to do that with you guys.
+Arthur Wandzel | 01:49
+Yeah, thanks a lot, Andrew. All right, this is a bit of a logistics call then to set... We have a pretty structured next step in terms of the roadmap. I just wanted to pass it by you in terms of...
+So we have an expectation of how what we're going to be tackling together going forward. So what I want to do in this call is just sign off on the roadmap, make sure it aligns with your current initiatives that you're running with Greenpeak.
+So, for example, the transcript. And then basically to kick off the invoice, and then we can rock and roll. So that's what we'd like to cover today. Yeah. All right, so the PC phase is phase one, and the main focus here is this ICP profiling so that we can unlock a lot of downstream functionality and ROI.
+So here's the roadmap to achieve that. So we're going to start with data ingestion. We're going to identify our source data and identify modeling object objectives. Now I'm going to work off of Salesforce. The lead table that you have.
+I think we got something called all leads.
+Does this look like the table that we... This just to clarify, this is the table that we start with. You know, this is the table that's your first encounter off of the landing page, is that correct?
+Speaker 2 | 03:59
+This is going to be everybody that has come through and that's currently in this life cycle stage. So, you guys know that Salesforce operates where you have leads and you have contacts, right? Those are the two kind of record types.
+So these are all leads that we've generated that haven't been converted over to a contact. I think we've been talking about the scope of where we want to pull data, how many people is it going to be?
+I think that the general consensus is that we want to pull from multiple different life cycle stages. And really just determine... See if we can spot any trends by doing that simultaneously, just by seeing not just what data we're seeing, are we able to spot any near-term trends that will help us further define the scope, not necessarily from your guys' perspective, but maybe the scope of outcomes.
+How can we get fast ROI on our side by implementing them? So I'd think we'd want to test and run the data on a cohort of leads, on qualified leads and on some investors that we've generated as well to give us the... I don't know, from that perspective.
+If there is a number, let's say if it was... We're going to pull the data for a thousand names. All right, then on. It's on our, you know, it's on our end to go in and say, all right, we're going to pull out of those thousand 333 are going to be, you know, clients, three hundred and thirty three are going to be qualified leads, and 334 are going to be leads or whatever, right?
+Yeah, I think's kind of how we're thinking about it today. Okay. Curious for your reaction.
+Dirk Jan van Veen | 06:21
+I think the sample size of 200 to 300 is a good sample size for one category. Yeah.
+Arthur Wandzel | 06:35
+All right, that'll help us.
+Okay, what's your... If I recall, that I think I've got it up here on this table. I just want to know what percent... Okay, yeah, you're getting about 12,000 leads a month, so... Okay, that's about right.
+Yeah, 1,000 is 10%, a little bit less, so that looks good. Yeah, we can start with 1,000, but we need that initial dataset. So I think I've got a lead table here that I can work off of if you want to subsample it, let me know.
+Otherwise, I can just pick 300 of.
+Speaker 2 | 07:31
+Yeah, why don't I do... Let me... Why don't you? If you could, because I'm going to get on the road here in a minute. If you could just follow up with the action items on our side and send me an email to recap everything, then I can go and deploy internally.
+Yeah, that's the two... I'll take it. I'll have Paul create three lists, specifically of the names. Do you have exactly the 300 or about that number somewhere, give or take, and then name the lists accordingly.
+Then we'll share the names of the lists with you guys so you guys can just pop up the name of the list. You got that? The people, you can download them out and do what you got to do.
+Arthur Wandzel | 08:17
+Yeah, perfect. Perfect. And from our side, what we need to start is just their name, their phone number, and email. So I'm assuming all of them have that because that's what's on the contact list form. But anyways, we should add that straight away.
+All right, so then we got the data ingestion down. That's the requirements that we need on your side. We're going to push forward on doing ICP profiling efficiency. So that's the percentage of leads that we can construct ICP profiles for.
+We'll have that metric. Then we're going to enrich the ICP profiles. We're going to bring in third-party data. Here's where we will sign off on what enrichment we want to do. So that's where we'll have a decision moving forward. Then we're going to do modeling objectives.
+So we're going to identify the ICP as we can categorize it according to what STR is on them, what their conversion rate is, some of the objectives and themes, what the deals are that are presented to them.
+So we're just going to basically have the ICP profile and understand how they're moving through the pipeline. I forgot to mention, when we do the enrichment, we want to add it. We want to bring in the transcript data.
+Have you guys moved forward with doing transcripts with call?
+Speaker 2 | 10:03
+No, we don't have that yet. I think that for this stage, I think we can just exclude that from the stage.
+Arthur Wandzel | 10:11
+Okay, that's fair. Alright, so we might not be able to do the objection theme mapping because this is really like AirCall stuff. I'll x that that.
+Speaker 2 | 10:27
+Yeah. I think what we'll be able to do depending on the life cycle or depending on... So if you want to look at deal-specific stuff, I think the areas we can look in would be... It's going to be partly dependent on the life cycle stage, but not totally.
+So here's what I mean. So if somebody is a qualified lead, or their client, then you're going to have more information about them relative to the number of opportunities and what those opportunities are in.
+So, right. So you can scrub the opportunity data, and then you could see if there was number one, was there an opportunity? We look at our last five capital raises as products, to say, "Okay, out of the last five, specifically for our investor segment, how many of them had an opportunity, no matter the status of that opportunity, right?" Whether it was closed one or closed loss, it doesn't matter. How many of them had an opportunity? Meaning we talked to them and they were interested in at least exploring it and having a conversation on it, right?
+Then you can go from that to determine, "Okay, we add... How many of those conversations closed one versus closed loss?" Right, yeah. Now, I'll give you some information that you may use here. You could do the same thing for qualified leads, and we can map...
+Okay, which we can do a little mapping on for the qualified leads. Which ones? How many opportunities do they have where they close one, close loss, et cetera, depending on the cohort, meaning of leads when they were generated.
+So, if they were generated, they're not going to have five opportunities because they didn't have the opportunity to see five deals, right? So I have to consider that.
+Then, on the lead side and or for all the contacts, I think another thing we could do is measure maybe some of our current deal scoring, which I'll pick up any activity they did on the website. So, if there could be a lead in there that opted in, went to the website, went to our deal room, watched the video, downloaded an offering memorandum, and spent some time on the page clicking around. They've attributed a score to let our sales team know that they've done those items and that now is probably a good time to reach out to them.
+So we can measure all three life cycle stages by maybe the score they've built on the last couple of capital raises and the last couple of deals, right? Based on that, if they have a score maybe over X, did we have a connected call with them thereafter? Did we not have a connected call?
+What was the interaction thereafter like? So, trying to get in your heads on how we can... What some of the data that currently exists is how the sales team uses it and how we may be able to scope that into this original data poll
+and assessment because it's obviously going to be something that... You know, everyone is really focused on what third-party data can we pull and how efficiently can we pull it.
+But I think it will be a level up and evaluate if we can incorporate some of this into the third-party data and some of the other things to show, "Hey, here's some people that the third-party data showed this and that, but they never got on the phone with your sales."
+Yeah, here's a gap, right? Here's a gap that you may want to attack. Maybe it's a different messaging, maybe they're not the right leads, maybe they opted in through a similar ad campaign
+that's not working right. Then we can... There may be a little... You guys track it. What I'm saying... yeah.
+Arthur Wandzel | 15:19
+Yeah, I got it actually. Cool, that's great. I'm going to put that in the modeling objectives as to identify those gaps, got it. Okay, yeah, that was a really useful contribution here because now I'm on that.
+Speaker 2 | 15:40
+Yeah. On that point, keep firing those types of questions at me because I think that's what's in my mind, the bridge that we're looking to and the gap we're looking to bridge here is you guys know the tech, and I think you know the scope for what we're looking to get out of this thing. Don't know the sales operations. You don't know the marketing operations, right? You don't know our business intimately enough yet to be able to know all those things.
+So I can help in those, clean up those gaps along the way. Even if we have a conversation for five minutes and we realize, "All right, shit, it doesn't seem like we can get much out of what we just talked about."
+That's fine. At least you guys are getting a better intimate knowledge of how the business works and what we're using today. Maybe there's a different business case, a different technique, or something tactic that we were not doing that you guys have done with other firms. That's actually something that we probably could do.
+Arthur Wandzel | 16:48
+Okay. And I'll add this. All right, thanks for that. That was pretty big in terms of how we're gonna approach this. Alright, looks good. Yeah, I've got it here that we're going to identify these pipeline gaps as with respect to ICPS and that's going to be a big ROI indicator.
+And then here we're just going to do some predict predictive modeling. Just. A rough draft. And what that essentially is that given this understanding of these pipeline gaps in ICP, let's say that someone hits the you know, enters into the pipeline, they hits hit the top funnel.
+Dirk Jan van Veen | 17:23
+Camps I see what signal someone hits the top funnel by one minute, and then they have their email and phone number score on Saturday as I'm way back in the pipeline.
+Arthur Wandzel | 17:32
+They have their email and phone number. What we do is we predict we'll be able to score them, say, "Okay, this is what we think of how they're going to react in the pipeline."
+That's going to be a rough draft.
+Dirk Jan van Veen | 17:44
+And going to be a broad term to be perfect, but we're going to be... You indicate how the bur we have because that's going to allow a lot of marketing pipeline customization and sales pipeline customization in terms of cadence, sequencing, and reactiv.
+Arthur Wandzel | 17:46
+It's not going to be perfect, but we're going to have at least a little indication of that because that's going to unlock a lot of marketing pipeline customization and sales pipeline customization in terms of cadence, sequencing, and reactivation.
+Speaker 2 | 18:06
+Yeah. And I'm very interested in that.
+Dirk Jan van Veen | 18:11
+I not only that you guys person with something and we understand the logic for it and we think maybe there's be any in can give a few guys ins all here second abrary expation.
+Speaker 2 | 18:11
+I you guys and totally get that it's not going to be perfect, if you guys present us something, we understand the logic for it, and then we can make a determination on how accurate we think the logic is.
+Again, yes, if you guys get it, it's a hundred percent. Yeah, great. That's not my expectation, obviously, but it'll inform some of the things that we're already talking about in our current funnel and be able to say, if we get a really low predictability score, it's like, "Whoa, this is huge.
+Dirk Jan van Veen | 18:42
+S on c and it was st open like a really low predictability score. It's like well, this is notta in hosp.
+Speaker 2 | 18:54
+All right, let's dig in and let's figure out where the gaps are, right?
+Dirk Jan van Veen | 18:57
+So counter, me and for a second again, there's an "in" here, and at least three schools. A lot of these families, and you know my son, so he's going to be on our whatever we may send them off to, this clothes like what's underneath the cost here.
+Speaker 2 | 18:58
+So it's going to be helpful for us, to the contrary, if we're saying, "Okay, there's a lot of great people in here, and we should be able to close a lot of these guys." Then, on my side and your side, it's going to be like, "All right, well, where are we missing the mark on the sales side?"
+How are we not getting these guys clothes? What's driving these people away from us? What's our sales team doing here? So I think that's going to be big.
+Dirk Jan van Veen | 19:24
+So I think that's what you need for the one.
+Speaker 2 | 19:28
+What do you I guess what do you need for me and what you know what do you want your methodology to be there?
+Dirk Jan van Veen | 19:34
+The one you want your L to be intervie.
+Speaker 2 | 19:36
+Do you guys want to take a swim wing and then present to me before presenting to the larger group?
+Dirk Jan van Veen | 19:36
+You want to take a swim wing and then present to me before presenting to largers.
+Speaker 2 | 19:42
+Do the larger you want me to be side by side with you guys helping build out that logic?
+Dirk Jan van Veen | 19:42
+Do you want me to open this side by side with you guys, building out that logic from what we're going to go to learn a point.
+Speaker 2 | 19:46
+And where to go and how to find it. What do you... What are your expectations of me to help you there?
+Arthur Wandzel | 19:55
+We're going to get... So initially with the ICP profiling, we can break it off and we'll decide, "Hey, this is what we want for the Richmond.
+Dirk Jan van Veen | 19:56
+So with the eye safety profiling, when we break off and we'll decide this is what we want that to make someone really identify you, it was going to be a lot of know.
+Arthur Wandzel | 20:03
+So on here, we're going to identify the gaps together. This is going to be a lot of alignment.
+Yeah. So like you're saying, okay, we're going to really align here.
+And like we have weekly updates with you, like today, we can just discuss results and say, "You can steer the ship a lot here.
+Dirk Jan van Veen | 20:18
+We can just discuss results and say, "You can see or just write below Cher.
+Arthur Wandzel | 20:24
+Yeah.
+Dirk Jan van Veen | 20:24
+Yeah, okay. So, are you heading on to fem to or that bring in the swim wing? What methodology is is.
+Arthur Wandzel | 20:25
+What you want to focus on and how we can get it get one hundred percent.
+Speaker 2 | 20:31
+So 100% is the action why don't you give me an action item?
+Arthur Wandzel | 20:36
+Okay.
+Speaker 2 | 20:36
+To start to brainstorm what's going to be involved in the pipeline prediction methodology. This way I can dump my brain on you guys.
+Dirk Jan van Veen | 20:49
+I mean, I could build my dream on you guys.
+Speaker 2 | 20:53
+And again, for me, probably, you know, based on what you guys have seen and used in the past, there may be like some reaction from you guys.
+Dirk Jan van Veen | 20:53
+And totally based on your kind of student uses, maybe a little. We're going to check for the guys like you want you all quality relevant.
+Speaker 2 | 21:01
+Like, you know what? I don't think that's going to be totally relevant. And then there's going to be stuff that's like, yeah, that's 100% relevant.
+Dirk Jan van Veen | 21:04
+And going to be self.
+That's 100% irrelevant.
+Speaker 2 | 21:08
+So, I mean, feel free to push back and challenge me on any of what.
+Dirk Jan van Veen | 21:08
+So we're of different.
+Speaker 2 | 21:12
+I kind of brainstorm and assume.
+And then, you know, I'll try to throw up on the paper and just put a lot of stuff on there.
+Dirk Jan van Veen | 21:18
+It's a law that's in there and that's never going to be to find that you not get set up.
+Speaker 2 | 21:21
+And from there, we can wind it back instead of like, "Hey, we missed some key things or.
+Dirk Jan van Veen | 21:23
+One never missed some key and uncertainties are important as you guys and vice versa. It was gold for me to gold on the paper, and that's what I want to start from there and say, "Okay, this is relevant, this is role, this is normal, and so on." Sculpt it in it. We can at least st.
+Speaker 2 | 21:25
+Or maybe, I didn't think they were as important as you guys did or vice versa.
+I think the first goal for me is to throw up on the paper. Figure out how much stuff that data that we have that we can consider in the methodology and then wind it back from there and say, "This is relevant, this isn't, this is relevant, this is..."
+Then we'll be able to narrow into a scope that we can at least start with.
+Arthur Wandzel | 21:49
+What do you think? Yeah, that sounds great.
+Dirk Jan van Veen | 21:50
+Yeah, that sounds great.
+Arthur Wandzel | 21:52
+That that sounds great.
+Dirk Jan van Veen | 21:52
+That sounds great.
+Arthur Wandzel | 21:54
+Okay.
+Dirk Jan van Veen | 21:54
+Okay.
+Arthur Wandzel | 21:54
+And then we can scope it because right now we have it on the rough draft.
+Dirk Jan van Veen | 21:54
+And then we can scrap it. As right now we bit on the rough draf.
+Arthur Wandzel | 21:58
+We just want to find an indication of value here and then that if there's, you know, some signal, then we're going to double down on it in the MVP road map.
+Dirk Jan van Veen | 21:58
+I just want to find an indication I'm here. I don't know, it just, you know, seems sal that we're a double down in that if you rob.
+Speaker 2 | 22:10
+Yeah, I guess something for you guys.
+If there's
+some example, maybe that's public on the Internet, or maybe that's something that, under confidentiality, you could share with me you've done with your other clients that I could see that'll help get my brain jogging.
+Dirk Jan van Veen | 22:22
+Wonder that you can share that you've done with your own employee.
+Speaker 2 | 22:33
+That would be helpful too.
+If you don't have anything, that's fine. I could start from scratch, but if you have something that might help or an example of how the infrastructure is built that would help me create and enhance my vision as well.
+Arthur Wandzel | 22:48
+Okay, yeah, that sounds good. I'll put that in there. I can set it right now as an action item, and then maybe next week I'll have some content on that.
+Dirk Jan van Veen | 22:55
+That that makes us want to have some content on that.
+Speaker 2 | 22:59
+Okay, yeah, alright.
+Arthur Wandzel | 23:05
+Because we're yeah, we've got some view on that.
+Dirk Jan van Veen | 23:07
+We have some one that we want to present about and look at needs.
+Arthur Wandzel | 23:09
+We want to present it. Okay, sounds good.
+Dirk Jan van Veen | 23:12
+But so this is something we can set up in up.
+Arthur Wandzel | 23:12
+So this is... Then we do a debrief. So that would be really understanding.
+Dirk Jan van Veen | 23:15
+We really understand that you have... And we'll be able to find the specific for the room and that says.
+Arthur Wandzel | 23:16
+At that point, you'll hopefully have an Airtable or Einstein set up, and we'll be able to find, "Hey, this is what you're currently doing, and this is what we intend to do.
+Dirk Jan van Veen | 23:27
+Well we intend there and how all define that the.
+Arthur Wandzel | 23:28
+And then we'll define the MVP roadmap. And if everything looks good, you know, there's some ROI on the table, we'll double down on it.
+Speaker 2 | 23:38
+Yeah, I think with Einstein. So I have Paul and Mo going back to send in my email, and I presented them the scope of this engagement and said, "Okay, here's what we're looking to accomplish.
+Dirk Jan van Veen | 23:54
+Look at our... What is short, and I look at the sounds force and I go through the list of this.
+Speaker 2 | 23:56
+Go. look at the sales force AI tools through the lens of this engagement. What can we use? Where are the gaps? What are the costs going to be? What's the ROI? What keeps us killing and present me some thoughts on how you think Einstein, whatever it is.
+Dirk Jan van Veen | 24:18
+You think provides you know what designs like it's force and force you call now based based.
+Speaker 2 | 24:20
+Einstein and Salesforce, AI, Asian Force, whatever they're calling it nowadays can support this.
+Then from there we can come back to you guys and say, "Hey." We can do a separate call and just loop in all the mo and say, "All right, let's talk through this stuff. Here's what we think are going to be wins, here's some things that we think are going to be challenges, and here's what the costs are going to be to us.
+Dirk Jan van Veen | 24:44
+S. do you have it and is it something that you think the costs to you.
+Speaker 2 | 24:48
+What do you guys think? Is it something that we do? You think the ROI is there for the cost to use the native Salesforce tools? Or is there something better, faster, cheaper that you guys know of? Or is there a better, faster, or cheaper custom bill that you guys know of that'll get us what we can get here and more at a better price point?
+Then we can dive in and decide which direction we want to go on from there.
+Dirk Jan van Veen | 25:14
+Go.
+Yeah. You know.
+Arthur Wandzel | 25:16
+Yeah.
+Dirk Jan van Veen | 25:16
+What comes now? You know we'll work stuff and I think we can be able to get through this pretty quickly.
+Arthur Wandzel | 25:16
+We can converge on the debrief here, so we'll be able to make that call cool. Yeah, I think the estimation time, we're gonna work along it. We're gonna work in step, and I think we'll be able to get through this pretty quickly.
+Dirk Jan van Veen | 25:35
+And so the work here early wants it seems like there's some exciting things.
+Arthur Wandzel | 25:35
+So, we'll keep you updated. So it sounds like we've got a good scope of work here. We're really aligned. Seems like there's some exciting things we're gonna identify that we've identified to kick the project off. We'll like to invoice for half of it, and that way we Can have the resources allocated for it.
+Dirk Jan van Veen | 25:58
+And where we can help the resources allocated for it.
+Speaker 2 | 26:05
+Okay, so yeah, me...
+Just let me just check in with Jared on that and make sure that's alright and then send it to me in the meantime and I'll forward your contact on the accounting side.
+Dirk Jan van Veen | 26:09
+And the students would in the meantime for you are going examples if you want.
+Speaker 2 | 26:16
+His name is Rich Koenig and anything, any bills or invoices or anything payments you could definitely CC me on but always include Rich.
+Dirk Jan van Veen | 26:18
+Don't need anything for these emails or invoices or any containments you can definitely see on always include re.
+Speaker 2 | 26:28
+So okay, I give it. No, it's r kig KOENIG at frp ua.com.
+Arthur Wandzel | 26:45
+Okay, so.
+Speaker 2 | 26:47
+Rkoenig@frnp.comfnrpfn.
+Dirk Jan van Veen | 26:50
+Atter and g.com. That's an he ant dao and Karen I get very tired of that kind of with wa I hear back from you before I see that boy.
+Arthur Wandzel | 26:55
+Yeah. Okay, I'll send it out to him and you and Jared.
+Speaker 2 | 27:03
+Yep, perfect. And I'll just huddle with Jar real quick and make sure he's okay with that payments as okay.
+Arthur Wandzel | 27:10
+Should I wait to hear back from you before I send the invoice? Or should I just shoot the invoice.
+Dirk Jan van Veen | 27:15
+So I to check the alchemist an over milestones.
+Speaker 2 | 27:17
+Shoot it over? All.
+Arthur Wandzel | 27:19
+Right, yeah, we like to work pre-funded milestones.
+Dirk Jan van Veen | 27:24
+I don't right nine miles, but it's just so that we go back in.
+Arthur Wandzel | 27:24
+Of course, we break it down into milestones, but it's just so that we can put our resources on it.
+Dirk Jan van Veen | 27:28
+And resources on.
+Speaker 2 | 27:30
+Yep, I got it.
+Arthur Wandzel | 27:32
+Yeah, yep. All right, great. Well, we're absolutely aligned here. I'll send you over the action items, which we've identified as two.
+Dirk Jan van Veen | 27:38
+Which we could identify as two.
+Arthur Wandzel | 27:41
+And and looking forward to next week, we can go over the sales and marketing pipeline tactics for this prediction methodology.
+Dirk Jan van Veen | 27:41
+And looking forward to next week if we can go over your sales and marketing pipeline. It takes for this production and to locate your life as well as hopefully start getting some initial results.
+Arthur Wandzel | 27:49
+And as well as hopefully we can start getting some initial results once we get the invoice in and the lead list.
+Dirk Jan van Veen | 27:55
+Once we get that in, the invoice will be in, and that will be less.
+Speaker 2 | 27:59
+Yeah. If we need more time for the call, you think, or you guys have a question midstream or whatever, just feel free to reach out.
+Dirk Jan van Veen | 28:02
+And you need more of my phone call, you think.
+Arthur Wandzel | 28:11
+Okay? Perfect.
+Dirk Jan van Veen | 28:12
+You you agree with this?
+Arthur Wandzel | 28:12
+Andrew, this is always a pleasure.
+Dirk Jan van Veen | 28:12
+It's always a pleasure.
+Arthur Wandzel | 28:14
+Wishing you a great Wednesday.
+Speaker 2 | 28:18
+Then you guys, it sounds good. I'm forward to getting started.
+Arthur Wandzel | 28:23
+Yep, likewise, Andrew. All the best. Take care.
+Speaker 2 | 28:26
+Thanks guys.
+Arthur Wandzel | 28:27
+Bye you be.

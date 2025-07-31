@@ -1,0 +1,26 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "alphamachine-services"
+version = "0.1.0"
+description = "Shared services for Alpha Machine"
+authors = [
+  { name = "Jonathan", email = "jonathan@example.com" },
+]
+license = { file = "LICENSE" }
+dependencies = [
+    "alphamachine-core",
+    "openai",
+    "supabase",
+    "slack-sdk",
+    "notion-client",
+    "requests"
+]
+
+[tool.uv.sources]
+alphamachine-core = { workspace = true }
+
+[tool.hatch.build.targets.wheel]
+packages = ["."] 
