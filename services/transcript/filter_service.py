@@ -70,12 +70,31 @@ class TranscriptFilterService:
             print(f"   Filtered length: {len(filtered_content)} characters")
             print(f"   Redactions detected: {redaction_count}")
             
+            # Store filtered transcript in Supabase with duplicate prevention
+            supabase_id = None
+            try:
+                print(f"   💾 Storing filtered transcript in Supabase...")
+                supabase_id = self.supabase_service.store_filtered_transcript(
+                    filtered_transcript=filtered_content,
+                    pii_removed_count=redaction_count,
+                    original_transcript=transcript,
+                    filename=filename,
+                    replace_existing=False  # Set to True if you want to replace existing files
+                )
+                if supabase_id:
+                    print(f"   ✅ Stored in Supabase with ID: {supabase_id}")
+                else:
+                    print(f"   ⚠️  Failed to store in Supabase")
+            except Exception as e:
+                print(f"   ⚠️  Supabase storage error: {e}")
+            
             return TranscriptFilteringResult(
                 original_transcript=transcript,
                 filtered_transcript=filtered_content,
                 redaction_count=redaction_count,
                 processing_time=processing_time,
-                success=True
+                success=True,
+                supabase_id=supabase_id
             )
             
         except Exception as e:
@@ -245,6 +264,84 @@ class TranscriptFilterService:
         except Exception as e:
             print(f"Error retrieving filtered transcript: {e}")
             return None
+    
+    def get_stored_transcript(self, transcript_id: str) -> Optional[Dict[str, Any]]:
+        """Retrieve a filtered transcript from Supabase by ID."""
+        return self.supabase_service.get_filtered_transcript(transcript_id)
+    
+    def get_recent_stored_transcripts(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """Get recently filtered transcripts from Supabase."""
+        return self.supabase_service.get_recent_filtered_transcripts(limit)
+    
+    def check_if_processed(self, filename: str) -> Optional[Dict[str, Any]]:
+        """Check if a filename has already been processed."""
+        return self.supabase_service.check_if_filename_exists(filename)
+    
+    def reprocess_file(self, transcript: str, filename: str) -> TranscriptFilteringResult:
+        """Force reprocessing of a file (replaces existing record)."""
+        print(f"🔄 Force reprocessing: {filename}")
+        
+        # Set replace_existing to True temporarily
+        original_processing_time = time.time()
+        
+        try:
+            # Load the filtering prompt
+            prompt_config = self.prompts.get('filter_transcript_commercial_content')
+            if not prompt_config:
+                raise ValueError("Filtering prompt not found in prompts.yml")
+            
+            system_prompt = prompt_config['system_prompt']
+            user_prompt_template = prompt_config['user_prompt']
+            user_prompt = user_prompt_template.format(transcript=transcript)
+            
+            print(f"🔍 Reprocessing transcript: {filename}")
+            print(f"   Original length: {len(transcript)} characters")
+            
+            # Call AI service to filter the transcript
+            filtered_content = self.ai_service.generate_text(
+                system_prompt=system_prompt,
+                user_prompt=user_prompt
+            )
+            
+            if not filtered_content:
+                raise ValueError("AI service returned empty filtered content")
+            
+            # Count redactions
+            redaction_count = self._count_redactions(filtered_content)
+            processing_time = time.time() - original_processing_time
+            
+            print(f"   ✅ Reprocessing completed in {processing_time:.2f}s")
+            print(f"   Filtered length: {len(filtered_content)} characters")
+            print(f"   Redactions detected: {redaction_count}")
+            
+            # Store with replace_existing=True
+            supabase_id = self.supabase_service.store_filtered_transcript(
+                filtered_transcript=filtered_content,
+                pii_removed_count=redaction_count,
+                original_transcript=transcript,
+                filename=filename,
+                replace_existing=True
+            )
+            
+            return TranscriptFilteringResult(
+                original_transcript=transcript,
+                filtered_transcript=filtered_content,
+                redaction_count=redaction_count,
+                processing_time=processing_time,
+                success=True,
+                supabase_id=supabase_id
+            )
+            
+        except Exception as e:
+            processing_time = time.time() - original_processing_time
+            return TranscriptFilteringResult(
+                original_transcript=transcript,
+                filtered_transcript="",
+                redaction_count=0,
+                processing_time=processing_time,
+                success=False,
+                error_message=str(e)
+            )
 
 filter_router = APIRouter()
 filter_service = TranscriptFilterService()

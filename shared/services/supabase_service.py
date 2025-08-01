@@ -108,23 +108,111 @@ class SupabaseService:
             print(f"Error retrieving client status: {e}")
             return None
     
-    def store_filtered_transcript(self, filtered_transcript_data: Dict[str, Any]) -> Optional[str]:
-        """Store filtered transcript in Supabase."""
+    def store_filtered_transcript(self, filtered_transcript: str, pii_removed_count: int = 0, original_transcript: str = "", filename: str = "unknown.txt", replace_existing: bool = False) -> Optional[str]:
+        """Store filtered transcript in Supabase using the new table structure with duplicate prevention."""
         if not self.client:
             print("Error: Supabase client not initialized")
             return None
         
         try:
-            response = self.client.table('filtered_transcripts').insert(filtered_transcript_data).execute()
-            if response.data:
-                return response.data[0].get('id')
+            import hashlib
+            
+            # Simple filename-based duplicate prevention
+            # If same filename exists, block processing (replace option available)
+            
+            # Try new schema first (with filename column), fallback to basic schema
+            try:
+                # Check if this filename already exists
+                existing_filename = self.client.table('filtered_transcripts').select('id, filename, created_at').eq('filename', filename).execute()
+                
+                if existing_filename.data:
+                    existing_record = existing_filename.data[0]
+                    existing_date = existing_record.get('created_at', 'unknown')[:19] if existing_record.get('created_at') else 'unknown'
+                    existing_id = existing_record['id']
+                    
+                    if replace_existing:
+                        print(f"   🔄 File already processed: {filename}")
+                        print(f"   📅 Previous processing: {existing_date}")
+                        print(f"   🔁 Replacing existing record...")
+                        
+                        # Create updated data
+                        content_hash = hashlib.md5(f"{original_transcript}||{filtered_transcript}".encode()).hexdigest()
+                        original_hash = hashlib.md5(original_transcript.encode()).hexdigest()
+                        
+                        update_data = {
+                            'filtered_transcript': filtered_transcript,
+                            'pii_removed_count': pii_removed_count,
+                            'content_hash': content_hash,
+                            'original_hash': original_hash,
+                            'original_length': len(original_transcript),
+                            'filtered_length': len(filtered_transcript)
+                        }
+                        
+                        # Update existing record
+                        update_response = self.client.table('filtered_transcripts').update(update_data).eq('id', existing_id).execute()
+                        
+                        if update_response.data:
+                            print(f"   ✅ Updated existing record: {existing_id}")
+                            return existing_id
+                        else:
+                            print(f"   ⚠️  Failed to update existing record")
+                            return existing_id  # Return original ID even if update failed
+                    else:
+                        print(f"   ⚠️  File already processed: {filename}")
+                        print(f"   📅 Previous processing: {existing_date}")
+                        print(f"   🔄 Returning existing record (no reprocessing needed)")
+                        return existing_id
+                
+                # Create content hash for record keeping (optional)
+                content_hash = hashlib.md5(f"{original_transcript}||{filtered_transcript}".encode()).hexdigest()
+                original_hash = hashlib.md5(original_transcript.encode()).hexdigest()
+                
+                # Store new transcript with full content and metadata (new schema)
+                data = {
+                    'filtered_transcript': filtered_transcript,
+                    'pii_removed_count': pii_removed_count,
+                    'content_hash': content_hash,  # For potential future use
+                    'original_hash': original_hash,  # For potential future use
+                    'filename': filename,
+                    'original_length': len(original_transcript),
+                    'filtered_length': len(filtered_transcript)
+                }
+                
+                response = self.client.table('filtered_transcripts').insert(data).execute()
+                if response.data:
+                    return response.data[0].get('id')
+                
+            except Exception as schema_error:
+                if 'does not exist' in str(schema_error):
+                    print(f"   💡 Using basic schema (filename column not found)")
+                    
+                    # Fallback to basic duplicate check using filtered content match
+                    # This is less ideal but works for old schema
+                    existing_basic = self.client.table('filtered_transcripts').select('id').eq('filtered_transcript', filtered_transcript).execute()
+                    
+                    if existing_basic.data:
+                        print(f"   ⚠️  Identical content already exists (filename tracking unavailable)")
+                        return existing_basic.data[0]['id']
+                    
+                    # Store with basic schema (fallback)
+                    basic_data = {
+                        'filtered_transcript': filtered_transcript,
+                        'pii_removed_count': pii_removed_count
+                    }
+                    
+                    response = self.client.table('filtered_transcripts').insert(basic_data).execute()
+                    if response.data:
+                        return response.data[0].get('id')
+                else:
+                    raise schema_error
+            
             return None
         except Exception as e:
             print(f"Error storing filtered transcript: {e}")
             return None
     
     def get_filtered_transcript(self, transcript_id: str) -> Optional[Dict[str, Any]]:
-        """Retrieve filtered transcript by ID."""
+        """Retrieve filtered transcript by ID from the new table structure."""
         if not self.client:
             print("Error: Supabase client not initialized")
             return None
@@ -136,6 +224,45 @@ class SupabaseService:
             return None
         except Exception as e:
             print(f"Error retrieving filtered transcript: {e}")
+            return None
+    
+    def get_recent_filtered_transcripts(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """Get recently filtered transcripts from the new table."""
+        if not self.client:
+            print("Error: Supabase client not initialized")
+            return []
+        
+        try:
+            response = self.client.table('filtered_transcripts').select('*').order('created_at', desc=True).limit(limit).execute()
+            return response.data or []
+        except Exception as e:
+            print(f"Error retrieving recent filtered transcripts: {e}")
+            return []
+    
+    def get_transcripts_by_filename(self, filename: str) -> List[Dict[str, Any]]:
+        """Get all transcript variations for a specific filename."""
+        if not self.client:
+            print("Error: Supabase client not initialized")
+            return []
+        
+        try:
+            response = self.client.table('filtered_transcripts').select('*').eq('filename', filename).order('created_at', desc=True).execute()
+            return response.data or []
+        except Exception as e:
+            print(f"Error retrieving transcripts by filename: {e}")
+            return []
+    
+    def check_if_filename_exists(self, filename: str) -> Optional[Dict[str, Any]]:
+        """Check if a filename has already been processed."""
+        if not self.client:
+            print("Error: Supabase client not initialized")
+            return None
+        
+        try:
+            response = self.client.table('filtered_transcripts').select('*').eq('filename', filename).execute()
+            return response.data[0] if response.data else None
+        except Exception as e:
+            print(f"Error checking filename: {e}")
             return None
     
     def get_filtered_transcripts_by_project(self, project_name: str) -> List[Dict[str, Any]]:

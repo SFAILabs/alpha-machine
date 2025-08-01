@@ -32,8 +32,9 @@ class Config:
     LINEAR_DEFAULT_ASSIGNEE = os.getenv("LINEAR_DEFAULT_ASSIGNEE", "jonny34923@gmail.com")
     
     # Supabase Configuration
-    SUPABASE_URL = os.getenv("SUPABASE_URL")
-    SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+    SUPABASE_URL = os.getenv("NEXT_PUBLIC_SUPABASE_URL")
+    SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")  # Use service role for backend operations
+    SUPABASE_ANON_KEY = os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY")  # Available if needed for client-side operations
     
     # Slack Configuration
     SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_TOKEN")

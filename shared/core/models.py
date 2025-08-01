@@ -214,6 +214,7 @@ class TranscriptFilteringResult:
     processing_time: float
     success: bool = True
     error_message: Optional[str] = None
+    supabase_id: Optional[str] = None  # ID from Supabase after storing
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
@@ -223,5 +224,6 @@ class TranscriptFilteringResult:
             "redaction_count": self.redaction_count,
             "processing_time": self.processing_time,
             "success": self.success,
-            "error_message": self.error_message
+            "error_message": self.error_message,
+            "supabase_id": self.supabase_id
         } 
