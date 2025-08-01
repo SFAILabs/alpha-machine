@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from orchestrator import linear_router
+from services.linear.orchestrator import linear_router
 
 app = FastAPI()
 
@@ -15,4 +15,4 @@ def read_root():
     return {"Service": "Linear"}
 
 if __name__ == "__main__":
-    uvicorn.run("linear.main:app", host="0.0.0.0", port=8002, reload=True) 
+    uvicorn.run("services.linear.main:app", host="0.0.0.0", port=8002, reload=True) 

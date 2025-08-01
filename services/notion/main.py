@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from notion.flow.processor import notion_router
+from services.notion.processor import notion_router
 
 app = FastAPI()
 
@@ -15,4 +15,4 @@ def read_root():
     return {"Service": "Notion"}
 
 if __name__ == "__main__":
-    uvicorn.run("notion.main:app", host="0.0.0.0", port=8003, reload=True) 
+    uvicorn.run("services.notion.main:app", host="0.0.0.0", port=8003, reload=True) 
