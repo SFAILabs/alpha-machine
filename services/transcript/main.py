@@ -4,9 +4,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from transcript.flow.webhook_handler import webhook_router
-from transcript.flow.processor import processor_router
-from transcript.flow.filter_service import filter_router
+from services.transcript.webhook_handler import webhook_router
+from services.transcript.processor import processor_router
+from services.transcript.filter_service import filter_router
 
 app = FastAPI()
 
@@ -19,4 +19,4 @@ def read_root():
     return {"Service": "Transcript"}
 
 if __name__ == "__main__":
-    uvicorn.run("transcript.main:app", host="0.0.0.0", port=8000, reload=True) 
+    uvicorn.run("services.transcript.main:app", host="0.0.0.0", port=8000, reload=True) 

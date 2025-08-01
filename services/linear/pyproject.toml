@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "linear-service"
+name = "alphamachine-linear"
 version = "0.1.0"
-description = "Linear service for Alpha Machine"
+description = "Linear integration service for Alpha Machine"
 authors = [
   { name = "Jonathan", email = "jonathan@example.com" },
 ]
@@ -20,8 +20,8 @@ classifiers = [
 ]
 dependencies = [
     "fastapi",
-    "uvicorn[standard]",
-    "python-multipart",
+    "uvicorn",
+    "python-dotenv",
     "alphamachine-core",
     "alphamachine-services"
 ]
@@ -41,4 +41,4 @@ managed = true
 allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["src"] 
+packages = ["."] 

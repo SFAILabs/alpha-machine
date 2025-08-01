@@ -135,7 +135,7 @@ class GeneratedIssue(BaseModel):
     milestone: Optional[str] = Field(None, description="Milestone name")
     issue_title: str = Field(..., description="Title of the issue")
     issue_description: str = Field(..., description="Detailed description of the issue")
-    assign_team_member: str = Field(default="jonny34923@gmail.com", description="Email of team member to assign")
+    assign_team_member: Optional[str] = Field(None, description="Email of team member to assign. Leave null if unassigned.")
     time_estimate: Optional[str] = Field(None, description="Time estimate (0.5|1|2|4|8)")
     subissues: Optional[List[str]] = Field(None, description="List of subtasks")
     priority: str = Field(default="2", description="Priority level (0|1|2|3|4, 0=highest, 4=lowest)")

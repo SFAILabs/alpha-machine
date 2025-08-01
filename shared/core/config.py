@@ -27,9 +27,8 @@ class Config:
     
     # Linear Configuration
     LINEAR_API_KEY = os.getenv("LINEAR_API_KEY")
-    TEST_LINEAR_API_KEY = os.getenv("TEST_LINEAR_API_KEY")
-    LINEAR_TEAM_NAME = os.getenv("LINEAR_TEAM_NAME", "Jonathan Test Space")
-    LINEAR_DEFAULT_ASSIGNEE = os.getenv("LINEAR_DEFAULT_ASSIGNEE", "jonny34923@gmail.com")
+    LINEAR_TEAM_NAME = os.getenv("LINEAR_TEAM_NAME", "SFAI Labs")
+    LINEAR_TEST_MODE = os.getenv("LINEAR_TEST_MODE", "False").lower() in ("true", "1", "t")
     
     # Supabase Configuration
     SUPABASE_URL = os.getenv("NEXT_PUBLIC_SUPABASE_URL")
@@ -82,14 +81,14 @@ class Config:
         return {
             "api_key": cls.LINEAR_API_KEY,
             "team_name": cls.LINEAR_TEAM_NAME,
-            "default_assignee": cls.LINEAR_DEFAULT_ASSIGNEE
+            "default_assignee": None
         }
     
     @classmethod
     def get_test_linear_config(cls) -> Dict[str, Any]:
-        """Get Linear configuration for Jonathan Test Space (WRITE ONLY)."""
+        """Get Linear configuration for test mode (WRITE ONLY)."""
         return {
-            "api_key": cls.TEST_LINEAR_API_KEY,
+            "api_key": cls.LINEAR_API_KEY,
             "team_name": cls.LINEAR_TEAM_NAME,
-            "default_assignee": cls.LINEAR_DEFAULT_ASSIGNEE
+            "default_assignee": None
         } 

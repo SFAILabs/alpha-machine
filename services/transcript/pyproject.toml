@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "transcript-service"
+name = "alphamachine-transcript"
 version = "0.1.0"
-description = "Transcript service for Alpha Machine"
+description = "Transcript processing service for Alpha Machine"
 authors = [
   { name = "Jonathan", email = "jonathan@example.com" },
 ]
@@ -20,11 +20,10 @@ classifiers = [
 ]
 dependencies = [
     "fastapi",
-    "uvicorn[standard]",
+    "uvicorn",
     "python-dotenv",
-    "openai",
-    "supabase",
-    "pyyaml"
+    "alphamachine-core",
+    "alphamachine-services"
 ]
 
 [project.urls]
@@ -37,5 +36,9 @@ managed = true
 [tool.hatch.metadata]
 allow-direct-references = true
 
+[tool.uv.sources]
+alphamachine-core = { workspace = true }
+alphamachine-services = { workspace = true }
+
 [tool.hatch.build.targets.wheel]
-packages = ["src"] 
+packages = ["."] 

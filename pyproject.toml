@@ -1,19 +1,5 @@
-# Root workspace configuration - not a buildable package
-[tool.uv]
-dev-dependencies = [
-    "pytest>=7.0.0",
-    "black>=23.0.0", 
-    "ruff>=0.1.0",
-    "mypy>=1.0.0"
-]
+# This file defines the uv workspace.
+# It is not a buildable package.
 
-# Alpha Machine workspace with shared packages
-[tool.uv.workspace]
-members = [
-    "shared/core",
-    "shared/services",
-    "services/transcript",
-    "services/slackbot", 
-    "services/linear",
-    "services/notion"
-]
+[tool.uv]
+workspace = { members = ["services/*", "shared/core", "shared/services"] }

@@ -2,8 +2,10 @@
 Webhook handler for receiving Krisp transcripts via Zapier.
 """
 
+import json
 from typing import Dict, Any
 from fastapi import APIRouter, Request, HTTPException
+
 from .processor import TranscriptProcessor
 
 webhook_router = APIRouter()
