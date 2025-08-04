@@ -4,6 +4,8 @@ OpenAI service for AI-powered transcript processing.
 
 from typing import Dict, Any, List, Optional
 from openai import OpenAI
+from pydantic import BaseModel
+
 from shared.core.models import GeneratedIssue, GeneratedIssuesResponse
 from shared.core.config import Config
 
@@ -69,6 +71,22 @@ class OpenAIService:
             print(f"Error calling OpenAI API for text generation: {e}")
             raise 
     
+    def get_structured_response(self, system_prompt: str, user_prompt: str, response_model: BaseModel) -> Dict[str, Any]:
+        """Call OpenAI API and get a structured response based on a Pydantic model."""
+        try:
+            response = self.client.chat.completions.parse(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                response_format=response_model
+            )
+            return response.choices[0].message.parsed.model_dump()
+        except Exception as e:
+            print(f"Error calling OpenAI API for structured response: {e}")
+            raise
+
     def chat_with_responses_api(self, user_input: str, previous_response_id: Optional[str] = None) -> Dict[str, Any]:
         """
         Chat using OpenAI Responses API with conversation history.

@@ -125,6 +125,40 @@ The Slack bot provides comprehensive AI-powered commands:
 - **Client Context**: Retrieves client documents and project information
 - **Requirements Analysis**: AI-powered analysis of Notion content for Linear tickets
 
+## Development Workflow
+
+This project is managed by a central `Makefile` that uses `uv` to handle a shared virtual environment.
+
+### 1. Install All Dependencies
+This one-time command will create a single, shared virtual environment (`.venv`) and install all project dependencies, including all local services as editable packages.
+```bash
+make install
+```
+
+### 2. Run Services for Development
+To run all services (transcript, linear, notion, slackbot) in the background, use:
+```bash
+make run-dev
+```
+Logs for each service will be redirected to `/tmp/alpha-machine-<service_name>.log`.
+
+To run a single service in the foreground for debugging:
+```bash
+make run service=transcript
+```
+
+### 3. Run the Transcript to Linear Test
+With the services running, you can execute the end-to-end test for the transcript and linear services:
+```bash
+make test-transcript-linear
+```
+
+### 4. Stop All Services
+This command will find and stop all the background services started with `run-dev`.
+```bash
+make stop
+```
+
 ## Usage
 
 ### Prerequisites
@@ -148,7 +182,7 @@ The Slack bot provides comprehensive AI-powered commands:
    # Linear (Optional)
    export LINEAR_API_KEY="your-linear-api-key"
    export LINEAR_TEAM_NAME="Your Team Name"
-   export LINEAR_DEFAULT_ASSIGNEE="user@example.com"
+   export LINEAR_TEST_MODE=false
    
    # Notion (Optional)
    export NOTION_TOKEN="your-notion-token"
@@ -211,8 +245,8 @@ Once the Slack bot is running, you can use these commands in any Slack channel:
 | `SLACK_BOT_TOKEN` | Required | Slack bot user OAuth token |
 | `SLACK_SIGNING_SECRET` | Required | Slack app signing secret |
 | `LINEAR_API_KEY` | Optional | Linear API key |
-| `LINEAR_TEAM_NAME` | `Jonathan Test Space` | Default team name |
-| `LINEAR_DEFAULT_ASSIGNEE` | `jonny34923@gmail.com` | Default assignee email |
+| `LINEAR_TEAM_NAME` | `SFAI Labs` | Default team name |
+| `LINEAR_TEST_MODE` | `false` | Enable test mode for writing to Linear |
 | `NOTION_TOKEN` | Optional | Notion integration token |
 
 ## Development

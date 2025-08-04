@@ -151,10 +151,10 @@ class LinearService:
         
         return LinearContext(projects=projects, milestones=milestones, issues=issues)
     
-    def get_team_id(self) -> Optional[str]:
+    def get_team_id(self, team_name: str) -> Optional[str]:
         """Get team ID by name."""
         query = """
-        query {
+        query Teams {
             teams {
                 nodes {
                     id
@@ -169,7 +169,7 @@ class LinearService:
             data = self._make_request(query)
             teams = data['data']['teams']['nodes']
             for team in teams:
-                if team['name'] == self.team_name:
+                if team['name'] == team_name:
                     return team['id']
             return None
         except Exception as e:
@@ -229,16 +229,17 @@ class LinearService:
             return None
     
     def create_milestone(self, milestone_name: str, project_id: str, description: str = "") -> Optional[str]:
-        """Create a new milestone (SAFETY CHECKED - Jonathan Test Space only)."""
-        # CRITICAL SAFETY CHECK: Prevent writing to SFAI workspace
-        if self.api_key == Config.LINEAR_API_KEY:
+        """Create a new milestone in test mode."""
+        if not Config.LINEAR_TEST_MODE:
             raise ValueError(
-                "🚨 CRITICAL SAFETY ERROR: Attempting to create milestone in SFAI workspace! "
-                "This is FORBIDDEN. Use TEST_LINEAR_API_KEY for Jonathan Test Space only."
+                "🚨 CRITICAL SAFETY ERROR: Attempting to create milestone in production. "
+                "Set LINEAR_TEST_MODE=true in your .env file to enable writing."
             )
+
+        print(f"✅ SAFETY CHECK PASSED: Creating milestone in test mode.")
         
-        print(f"✅ SAFETY CHECK PASSED: Creating milestone in Jonathan Test Space")
-        
+        milestone_name = f"[TEST] {milestone_name}"
+
         mutation = """
         mutation CreateProjectMilestone($input: ProjectMilestoneCreateInput!) {
             projectMilestoneCreate(input: $input) {
@@ -309,16 +310,18 @@ class LinearService:
             return None
     
     def _create_project(self, project_name: str, project_description: str = "") -> Optional[str]:
-        """Create a new project (SAFETY CHECKED - Jonathan Test Space only)."""
-        # CRITICAL SAFETY CHECK: Prevent writing to SFAI workspace
-        if self.api_key == Config.LINEAR_API_KEY:
+        """Create a new project in test mode."""
+        if not Config.LINEAR_TEST_MODE:
             raise ValueError(
-                "🚨 CRITICAL SAFETY ERROR: Attempting to create project in SFAI workspace! "
-                "This is FORBIDDEN. Use TEST_LINEAR_API_KEY for Jonathan Test Space only."
+                "🚨 CRITICAL SAFETY ERROR: Attempting to create project in production. "
+                "Set LINEAR_TEST_MODE=true in your .env file to enable writing."
             )
+
+        print(f"✅ SAFETY CHECK PASSED: Creating project in test mode.")
         
-        print(f"✅ SAFETY CHECK PASSED: Creating project in Jonathan Test Space")
-        team_id = self.get_team_id()
+        project_name = f"[TEST] {project_name}"
+        
+        team_id = self.get_team_id(self.team_name)
         if not team_id:
             print(f"Error: Team '{self.team_name}' not found")
             return None
@@ -358,31 +361,27 @@ class LinearService:
             return None
     
     def create_issue(self, issue_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Create a new issue (SAFETY CHECKED - Jonathan Test Space only)."""
-        # CRITICAL SAFETY CHECK: Prevent writing to SFAI workspace
-        if self.api_key == Config.LINEAR_API_KEY:
+        """Create a new issue in test mode."""
+        if not Config.LINEAR_TEST_MODE:
             raise ValueError(
-                "🚨 CRITICAL SAFETY ERROR: Attempting to write to SFAI workspace! "
-                "This is FORBIDDEN. Use TEST_LINEAR_API_KEY for Jonathan Test Space only. "
-                f"Current API key: {self.api_key[:10]}..."
+                "🚨 CRITICAL SAFETY ERROR: Attempting to write to production. "
+                "Set LINEAR_TEST_MODE=true in your .env file to enable writing."
             )
+
+        print(f"✅ SAFETY CHECK PASSED: Writing to workspace in test mode.")
+
+        # Prefix title with [TEST] in test mode
+        issue_data['issue_title'] = f"[TEST] {issue_data['issue_title']}"
         
-        # Additional safety check - ensure we're using TEST_LINEAR_API_KEY
-        if not Config.TEST_LINEAR_API_KEY or self.api_key != Config.TEST_LINEAR_API_KEY:
-            raise ValueError(
-                "🚨 SAFETY ERROR: Must use TEST_LINEAR_API_KEY for writing tickets. "
-                "SFAI workspace is READ-ONLY."
-            )
-        
-        print(f"✅ SAFETY CHECK PASSED: Writing to Jonathan Test Space with TEST_LINEAR_API_KEY")
-        team_id = self.get_team_id()
-        assignee_id = self.get_user_id(issue_data['assign_team_member'])
+        team_name_to_find = issue_data.get('team') or self.team_name
+        team_id = self.get_team_id(team_name_to_find)
+
+        assignee_id = None
+        if issue_data.get('assign_team_member'):
+            assignee_id = self.get_user_id(issue_data['assign_team_member'])
         
         if not team_id:
-            print(f"Error: Team '{self.team_name}' not found")
-            return None
-        if not assignee_id:
-            print(f"Error: User '{issue_data['assign_team_member']}' not found")
+            print(f"Error: Team '{team_name_to_find}' not found")
             return None
         
         # Get or create project
@@ -444,7 +443,6 @@ class LinearService:
                 "title": issue_data['issue_title'],
                 "description": issue_data['issue_description'],
                 "teamId": team_id,
-                "assigneeId": assignee_id,
                 "priority": priority,
                 "estimate": estimate
             }
@@ -453,6 +451,10 @@ class LinearService:
         # Add due date if provided
         if issue_data.get('deadline'):
             variables["input"]["dueDate"] = issue_data['deadline']
+        
+        # Add assignee if found
+        if assignee_id:
+            variables["input"]["assigneeId"] = assignee_id
         
         # Add project if available
         if project_id:
@@ -474,15 +476,15 @@ class LinearService:
             return None
     
     def _delete_issue(self, issue_id: str) -> bool:
-        """Delete an issue by ID (SAFETY CHECKED - Jonathan Test Space only)."""
-        # CRITICAL SAFETY CHECK: Prevent writing to SFAI workspace
-        if self.api_key == Config.LINEAR_API_KEY:
+        """Delete an issue by ID in test mode."""
+        if not Config.LINEAR_TEST_MODE:
             raise ValueError(
-                "🚨 CRITICAL SAFETY ERROR: Attempting to delete issue in SFAI workspace! "
-                "This is FORBIDDEN. Use TEST_LINEAR_API_KEY for Jonathan Test Space only."
+                "🚨 CRITICAL SAFETY ERROR: Attempting to delete issue in production. "
+                "Set LINEAR_TEST_MODE=true in your .env file to enable writing."
             )
-        
-        print(f"✅ SAFETY CHECK PASSED: Deleting issue in Jonathan Test Space")
+
+        print(f"✅ SAFETY CHECK PASSED: Deleting issue in test mode.")
+
         mutation = """
         mutation DeleteIssue($id: String!) {
             issueDelete(id: $id) {

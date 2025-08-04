@@ -23,9 +23,9 @@ class SlackCommandHandler:
     Handles processing of Slack slash commands using prompts.yml.
     
     PRODUCTION SAFETY:
-    - Uses linear_read_service (LINEAR_API_KEY) for reading SFAI production data
-    - Uses linear_write_service (TEST_LINEAR_API_KEY) for any writes to test workspace
-    - This prevents accidental writes to production Linear workspace
+    - Uses a single Linear service instance.
+    - Write operations are only enabled if LINEAR_TEST_MODE is true.
+    - This prevents accidental writes to the production Linear workspace.
     """
     
     def __init__(self):
@@ -37,18 +37,10 @@ class SlackCommandHandler:
             max_tokens=Config.OPENAI_MAX_TOKENS,
             temperature=Config.OPENAI_TEMPERATURE
         )
-        # READ-ONLY Linear service for production data
-        self.linear_read_service = LinearService(
-            api_key=Config.LINEAR_API_KEY,  # Production - READ ONLY
-            team_name="SFAI",  # Production workspace
-            default_assignee=None
-        )
-        
-        # WRITE Linear service for test operations  
-        self.linear_write_service = LinearService(
-            api_key=Config.TEST_LINEAR_API_KEY,  # Test workspace - SAFE FOR WRITES
-            team_name=getattr(Config, 'LINEAR_TEAM_NAME', 'Jonathan Test Space'),
-            default_assignee=getattr(Config, 'LINEAR_DEFAULT_ASSIGNEE', 'jonny34923@gmail.com')
+        self.linear_service = LinearService(
+            api_key=Config.LINEAR_API_KEY,
+            team_name=Config.LINEAR_TEAM_NAME,
+            default_assignee=Config.LINEAR_DEFAULT_ASSIGNEE
         )
         self.notion_service = NotionService()
         self.supabase_service = SupabaseService()
@@ -64,8 +56,8 @@ class SlackCommandHandler:
                 response = await self._handle_chat_command(payload)
             elif command == "/summarize":
                 response = await self._handle_summarize_command(payload)
-            elif command == "/create":
-                response = await self._handle_create_command(payload)
+            elif command == "/create-ticket":
+                response = await self._handle_create_ticket_command(payload)
             elif command == "/teammember":
                 response = await self._handle_teammember_command(payload)
             elif command == "/weekly-summary":
@@ -148,12 +140,12 @@ class SlackCommandHandler:
                 "text": "❌ Invalid format. Use:\n• `/summarize last @meeting @timestamp`\n• `/summarize client [client_name]`"
             }
     
-    async def _handle_create_command(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_create_ticket_command(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Handle /create command using prompts.yml.
+        Handle /create-ticket command.
         
-        SAFETY: This only provides AI analysis of what tickets should be created.
-        It does NOT actually create tickets in Linear to protect production.
+        In test mode, this command creates a ticket in Linear.
+        Otherwise, it provides an AI analysis of what ticket should be created.
         """
         text = payload.get("text", "").strip()
         
@@ -180,17 +172,38 @@ class SlackCommandHandler:
         
         try:
             ai_response = self.ai_service._call_openai_structured(system_prompt, user_prompt)
-            ai_response = ai_response[0] if ai_response else ""
             
+            # If not in test mode, return the analysis
+            if not Config.LINEAR_TEST_MODE:
+                return {
+                    "response_type": "ephemeral",
+                    "text": f"📋 **Linear Ticket Analysis (Test Mode Disabled):**\n\n{ai_response[0]}"
+                }
+            
+            # In test mode, create the ticket
+            issue_data = json.loads(ai_response[0])
+            created_issue = self.linear_service.create_issue(issue_data)
+            
+            if created_issue:
+                return {
+                    "response_type": "in_channel",
+                    "text": f"✅ **Ticket Created in Linear:**\n\n**Title:** {created_issue['title']}\n**ID:** {created_issue['id']}"
+                }
+            else:
+                return {
+                    "response_type": "ephemeral",
+                    "text": "❌ **Failed to create Linear ticket.** The AI analysis was:\n\n" + ai_response[0]
+                }
+                
+        except json.JSONDecodeError:
             return {
                 "response_type": "ephemeral",
-                "text": f"📋 **Linear Tickets Analysis:**\n\n{ai_response}"
+                "text": f"❌ **Error:** The AI returned an invalid format. Analysis:\n\n{ai_response[0]}"
             }
-            
         except Exception as e:
             return {
-                "response_type": "ephemeral",
-                "text": f"❌ Error analyzing ticket creation: {str(e)}"
+                "response_type": "ephemeral", 
+                "text": f"❌ Error processing ticket creation: {str(e)}"
             }
     
     async def _handle_teammember_command(self, payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -375,7 +388,7 @@ class SlackCommandHandler:
             
             # Linear workspace
             try:
-                linear_context = self.linear_read_service.get_workspace_context() # Use linear_read_service
+                linear_context = self.linear_service.get_workspace_context()
                 context_parts.append(f"\n🎯 LINEAR WORKSPACE:")
                 context_parts.append(f"• Active Projects: {len(linear_context.projects)}")
                 context_parts.append(f"• Open Issues: {len([i for i in linear_context.issues if i.state != 'Done'])}")
