@@ -40,7 +40,6 @@ class SlackCommandHandler:
         self.linear_service = LinearService(
             api_key=Config.LINEAR_API_KEY,
             team_name=Config.LINEAR_TEAM_NAME,
-            default_assignee=Config.LINEAR_DEFAULT_ASSIGNEE
         )
         self.notion_service = NotionService()
         self.supabase_service = SupabaseService()
@@ -56,8 +55,10 @@ class SlackCommandHandler:
                 response = await self._handle_chat_command(payload)
             elif command == "/summarize":
                 response = await self._handle_summarize_command(payload)
-            elif command == "/create-ticket":
+            elif command == "/create-ticket" or command == "/create":
                 response = await self._handle_create_ticket_command(payload)
+            elif command == "/update":
+                response = await self._handle_update_ticket_command(payload)
             elif command == "/teammember":
                 response = await self._handle_teammember_command(payload)
             elif command == "/weekly-summary":
@@ -204,6 +205,83 @@ class SlackCommandHandler:
             return {
                 "response_type": "ephemeral", 
                 "text": f"❌ Error processing ticket creation: {str(e)}"
+            }
+    
+    async def _handle_update_ticket_command(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Handle /update command for updating existing Linear tickets.
+        
+        In test mode, this command updates a ticket in Linear.
+        Otherwise, it provides an AI analysis of what should be updated.
+        """
+        text = payload.get("text", "").strip()
+        
+        if not text:
+            return {
+                "response_type": "ephemeral",
+                "text": "Please describe what you want to update in Linear.\n\nExamples:\n• `/update ticket ABC-123 to in progress`\n• `/update ABC-123: change title to 'New Task Name'`\n• `/update mark ticket XYZ-456 as completed`"
+            }
+        
+        context = await self._get_comprehensive_context()
+        
+        prompt_config = self.prompts.get('slack_bot_update_tickets')
+        if not prompt_config:
+            return {
+                "response_type": "ephemeral",
+                "text": "❌ Update tickets prompt configuration not found."
+            }
+        
+        system_prompt = prompt_config['system_prompt']
+        user_prompt = prompt_config['user_prompt'].format(
+            context=context,
+            update_request=text
+        )
+        
+        try:
+            ai_response = self.ai_service._call_openai_structured(system_prompt, user_prompt)
+            
+            # If not in test mode, return the analysis
+            if not Config.LINEAR_TEST_MODE:
+                return {
+                    "response_type": "ephemeral",
+                    "text": f"📝 **Linear Ticket Update Analysis (Test Mode Disabled):**\n\n{ai_response[0]}"
+                }
+            
+            # In test mode, parse the AI response and update the ticket
+            update_data = json.loads(ai_response[0])
+            ticket_id = update_data.get('ticket_id')
+            updates = update_data.get('updates', {})
+            summary = update_data.get('summary', 'Ticket update')
+            
+            if not ticket_id or not updates:
+                return {
+                    "response_type": "ephemeral",
+                    "text": "❌ **Unable to parse update request.** Please be more specific about which ticket to update and what changes to make."
+                }
+            
+            # Update the ticket
+            updated_issue = self.linear_service.update_issue(ticket_id, updates)
+            
+            if updated_issue:
+                return {
+                    "response_type": "in_channel",
+                    "text": f"✅ **Ticket Updated in Linear:**\n\n**Ticket:** {ticket_id}\n**Summary:** {summary}\n**URL:** {updated_issue.get('url', 'N/A')}"
+                }
+            else:
+                return {
+                    "response_type": "ephemeral",
+                    "text": f"❌ **Failed to update Linear ticket.** The AI analysis was:\n\n{ai_response[0]}"
+                }
+                
+        except json.JSONDecodeError:
+            return {
+                "response_type": "ephemeral",
+                "text": f"❌ **Error:** The AI returned an invalid format. Analysis:\n\n{ai_response[0]}"
+            }
+        except Exception as e:
+            return {
+                "response_type": "ephemeral", 
+                "text": f"❌ Error processing ticket update: {str(e)}"
             }
     
     async def _handle_teammember_command(self, payload: Dict[str, Any]) -> Dict[str, Any]:

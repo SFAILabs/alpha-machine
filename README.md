@@ -213,24 +213,34 @@ uv run webhook_server.py
 Once the Slack bot is running, you can use these commands in any Slack channel:
 
 ```bash
-# AI conversation with context
+# AI conversation with Linear context and meeting history
 /chat What was discussed about the client project in recent meetings?
+/chat Who is working on the authentication feature?
+/chat What are our current project priorities?
 
-# Meeting summary
+# Meeting and client summaries
 /summarize last @meeting @14:30
-
-# Client status
 /summarize client acme_corp
 
-# Create tickets
-/create tickets for the new feature requirements
+# Create Linear tickets with AI analysis
+/create Implement user authentication system
+/create-ticket Fix payment processing bug
 
-# Team member info
+# Update existing Linear tickets
+/update ticket ABC-123 to in progress
+/update ABC-123: change title to 'New Task Name'
+/update mark ticket XYZ-456 as completed
+/update assign ticket DEF-789 to john@company.com
+
+# Team member information and workload
 /teammember @john_doe
+/teammember john@company.com
 
-# Weekly summary
+# Automated weekly summary for stakeholders
 /weekly-summary
 ```
+
+**Note**: All Linear write operations (create/update tickets) require `LINEAR_TEST_MODE=true` to be set. Otherwise, commands provide AI analysis without modifying your Linear workspace.
 
 ## Configuration Options
 
@@ -246,6 +256,7 @@ Once the Slack bot is running, you can use these commands in any Slack channel:
 | `SLACK_SIGNING_SECRET` | Required | Slack app signing secret |
 | `LINEAR_API_KEY` | Optional | Linear API key |
 | `LINEAR_TEAM_NAME` | `SFAI Labs` | Default team name |
+| `LINEAR_DEFAULT_ASSIGNEE` | Optional | Default assignee email for new tickets |
 | `LINEAR_TEST_MODE` | `false` | Enable test mode for writing to Linear |
 | `NOTION_TOKEN` | Optional | Notion integration token |
 

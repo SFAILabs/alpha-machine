@@ -11,10 +11,9 @@ from shared.core.config import Config
 class LinearService:
     """Service for interacting with Linear API."""
     
-    def __init__(self, api_key: str, team_name: str, default_assignee: str):
+    def __init__(self, api_key: str, team_name: str):
         self.api_key = api_key
         self.team_name = team_name
-        self.default_assignee = default_assignee
         self.base_url = "https://api.linear.app/graphql"
         self.headers = {
             "Authorization": api_key,
@@ -475,6 +474,88 @@ class LinearService:
             print(f"Error creating issue: {e}")
             return None
     
+    def update_issue(self, issue_id: str, update_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Update an existing issue in Linear."""
+        if not Config.LINEAR_TEST_MODE:
+            raise ValueError(
+                "🚨 CRITICAL SAFETY ERROR: Attempting to update issue in production. "
+                "Set LINEAR_TEST_MODE=true in your .env file to enable writing."
+            )
+
+        print(f"✅ SAFETY CHECK PASSED: Updating issue {issue_id} in test mode.")
+
+        mutation = """
+        mutation UpdateIssue($id: String!, $input: IssueUpdateInput!) {
+            issueUpdate(id: $id, input: $input) {
+                success
+                issue {
+                    id
+                    title
+                    description
+                    priority
+                    url
+                    state {
+                        name
+                    }
+                    assignee {
+                        name
+                        email
+                    }
+                }
+            }
+        }
+        """
+        
+        # Build the input object based on what's provided
+        input_data = {}
+        
+        if 'title' in update_data:
+            input_data['title'] = update_data['title']
+        
+        if 'description' in update_data:
+            input_data['description'] = update_data['description']
+        
+        if 'priority' in update_data:
+            input_data['priority'] = int(update_data['priority'])
+        
+        if 'status' in update_data:
+            # Get state ID for status name
+            context = self.get_workspace_context()
+            for team in context.teams:
+                for state in team.workflow_states:
+                    if state.name.lower() == update_data['status'].lower():
+                        input_data['stateId'] = state.id
+                        break
+        
+        if 'assignee' in update_data:
+            # Get assignee ID
+            team_context = self.get_team_by_name(self.team_name)
+            if team_context:
+                for member in team_context.members:
+                    if (member.email == update_data['assignee'] or 
+                        member.name.lower() == update_data['assignee'].lower()):
+                        input_data['assigneeId'] = member.id
+                        break
+        
+        if 'deadline' in update_data and update_data['deadline']:
+            input_data['dueDate'] = update_data['deadline']
+        
+        variables = {
+            "id": issue_id,
+            "input": input_data
+        }
+        
+        try:
+            result = self._make_request(mutation, variables)
+            if result.get('data', {}).get('issueUpdate', {}).get('success'):
+                return result['data']['issueUpdate']['issue']
+            else:
+                print(f"Error updating issue: {result}")
+                return None
+        except Exception as e:
+            print(f"Error updating issue {issue_id}: {e}")
+            return None
+
     def _delete_issue(self, issue_id: str) -> bool:
         """Delete an issue by ID in test mode."""
         if not Config.LINEAR_TEST_MODE:
