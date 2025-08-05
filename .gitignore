@@ -55,3 +55,6 @@ slack_api_commands.sh
 update_slack_*.sh
 services/*/requirements.txt
 
+__pycache__/
+**/__pycache__/
+*.pyc

@@ -19,9 +19,152 @@ from shared.services.ai_service import OpenAIService
 from shared.services.linear_service import LinearService
 from shared.services.notion_service import NotionService
 from shared.services.supabase_service import SupabaseService
+from shared.core.models import LinearContext
 
 # Configure logging
 logger = logging.getLogger(__name__)
+
+def format_linear_context_comprehensive(linear_context: LinearContext) -> str:
+    """
+    Format Linear context into a comprehensive, highly organized text structure
+    for AI consumption with maximum detail and clarity.
+    """
+    
+    if not linear_context.projects and not linear_context.issues:
+        return "📝 LINEAR: No workspace data available"
+    
+    sections = []
+    
+    # ============================================================================
+    # EXECUTIVE SUMMARY
+    # ============================================================================
+    total_issues = len(linear_context.issues)
+    active_issues = len([i for i in linear_context.issues if i.state_type != 'completed'])
+    completed_issues = total_issues - active_issues
+    
+    sections.append("🎯 LINEAR WORKSPACE CONTEXT")
+    sections.append("=" * 50)
+    sections.append(f"📊 SUMMARY: {len(linear_context.projects)} projects | {active_issues} active issues | {completed_issues} completed")
+    sections.append(f"📈 Completion Rate: {(completed_issues/total_issues*100) if total_issues > 0 else 0:.1f}%")
+    sections.append("")
+    
+    # ============================================================================
+    # PROJECTS SECTION - DETAILED VIEW
+    # ============================================================================
+    sections.append("🚀 ACTIVE PROJECTS:")
+    
+    if not linear_context.projects:
+        sections.append("• No projects found")
+    else:
+        # Focus on projects with active work
+        active_projects = [p for p in linear_context.projects if p.state == 'started']
+        backlog_projects = [p for p in linear_context.projects if p.state != 'started']
+        
+        for project in active_projects:
+            sections.append(f"📋 {project.name} ({project.progress or 0:.1f}% complete)")
+            if project.description:
+                sections.append(f"   📝 {project.description}")
+            else:
+                sections.append(f"   📝 No description")
+            
+            # Project milestones
+            project_milestones = [m for m in linear_context.milestones if m.project_id == project.id]
+            if project_milestones:
+                sections.append(f"   🎯 Milestones:")
+                for milestone in project_milestones:
+                    sections.append(f"     • {milestone.name} (Target: {milestone.target_date or 'TBD'})")
+                    if milestone.description:
+                        sections.append(f"       📝 {milestone.description}")
+            
+            # Project issues - focus on active
+            project_issues = [iss for iss in linear_context.issues if iss.project_id == project.id]
+            active_project_issues = [iss for iss in project_issues if iss.state_type != 'completed']
+            
+            if active_project_issues:
+                sections.append(f"   🔥 Active Issues ({len(active_project_issues)}):")
+                for i, issue in enumerate(active_project_issues, 1):  # Show ALL issues with numbering
+                    priority_emoji = "🔴" if issue.priority == 1 else "🟡" if issue.priority == 2 else "🟢" if issue.priority == 3 else "⚪"
+                    assignee = issue.assignee_name or "Unassigned"
+                    
+                    # Clear issue separator with title
+                    sections.append(f"   ┌─ Issue #{i}: {priority_emoji} {issue.title}")
+                    sections.append(f"   │  👤 {assignee} | ⏱️ {issue.estimate or 'No'}h | Status: {issue.state_name}")
+                    if issue.description:
+                        # Properly indent description within the box
+                        desc_lines = issue.description.split('\n')
+                        for desc_line in desc_lines:
+                            if desc_line.strip():
+                                sections.append(f"   │  📝 {desc_line.strip()}")
+                    sections.append(f"   └─────────────────────────────────────────────")
+                    sections.append("")  # Extra spacing between issues
+            else:
+                sections.append(f"   📋 No active issues")
+            
+            sections.append("")
+    
+    # ============================================================================
+    # TEAM WORKLOAD SECTION
+    # ============================================================================
+    sections.append("👥 TEAM WORKLOAD:")
+    
+    # Group active issues by assignee
+    assignee_workload = {}
+    active_issues_list = [iss for iss in linear_context.issues if iss.state_type != 'completed']
+    
+    for issue in active_issues_list:
+        assignee = issue.assignee_name or "Unassigned"
+        if assignee not in assignee_workload:
+            assignee_workload[assignee] = []
+        assignee_workload[assignee].append(issue)
+    
+    if not assignee_workload:
+        sections.append("• No active issues assigned")
+    else:
+        for assignee, issues in sorted(assignee_workload.items(), key=lambda x: len(x[1]), reverse=True):
+            total_estimate = sum(iss.estimate or 0 for iss in issues)
+            high_priority = len([iss for iss in issues if iss.priority == 1])
+            
+            sections.append(f"👤 {assignee}: {len(issues)} issues | {total_estimate}h total | {high_priority} high priority")
+            
+            # Show ALL issues for this person with clear separation
+            for i, issue in enumerate(issues, 1):
+                priority_emoji = "🔴" if issue.priority == 1 else "🟡" if issue.priority == 2 else "🟢"
+                sections.append(f"   ├─ #{i}: {priority_emoji} {issue.title}")
+                if issue.description:
+                    # Properly indent description for team workload
+                    desc_lines = issue.description.split('\n')
+                    for desc_line in desc_lines:
+                        if desc_line.strip():
+                            sections.append(f"   │    📝 {desc_line.strip()}")
+                sections.append(f"   │")  # Spacing between issues
+    
+    sections.append("")
+    
+    # ============================================================================
+    # UPCOMING MILESTONES
+    # ============================================================================
+    if linear_context.milestones:
+        sections.append("🎯 UPCOMING MILESTONES:")
+        
+        # Sort by target date
+        sorted_milestones = sorted(
+            [m for m in linear_context.milestones if m.target_date], 
+            key=lambda m: m.target_date
+        )
+        
+        for milestone in sorted_milestones:
+            milestone_issues = [iss for iss in linear_context.issues if iss.milestone_id == milestone.id and iss.state_type != 'completed']
+            sections.append(f"📍 {milestone.name} (Target: {milestone.target_date})")
+            sections.append(f"   🚀 Project: {milestone.project_name}")
+            if milestone.description:
+                sections.append(f"   📝 {milestone.description}")
+            sections.append(f"   📋 Active Issues: {len(milestone_issues)}")
+        
+        sections.append("")
+    
+    sections.append("=" * 50)
+    
+    return "\n".join(sections)
 
 class SlackCommandHandler:
     """
@@ -528,7 +671,7 @@ class SlackCommandHandler:
             }
     
     async def _get_comprehensive_context(self) -> str:
-        """Get comprehensive context from all sources."""
+        """Get comprehensive context from all sources with full Linear workspace detail."""
         context_parts = []
         
         # Recent transcripts (handle database errors gracefully)
@@ -539,32 +682,32 @@ class SlackCommandHandler:
             transcripts = self.supabase_service.get_filtered_transcripts_by_date_range(start_date, end_date)
             
             if transcripts:
-                context_parts.append("📋 RECENT MEETINGS:")
+                context_parts.append("📋 RECENT MEETINGS (Last 7 Days):")
+                context_parts.append("-" * 35)
                 for transcript in transcripts[:3]:
                     meeting_date = transcript.get('metadata', {}).get('meeting_date', 'Unknown')
                     filtered_data = transcript.get('filtered_data', {})
                     ai_analysis = filtered_data.get('ai_analysis', '')
                     
                     context_parts.append(f"• {meeting_date}: {ai_analysis[:200]}..." if ai_analysis else f"• {meeting_date}: Meeting recorded")
+                context_parts.append("")
         except Exception as e:
             # Don't let database errors stop the entire context retrieval
             print(f"=== CONTEXT: Transcript retrieval failed: {str(e)} ===", flush=True)
             context_parts.append("📋 MEETINGS: Database unavailable")
+            context_parts.append("")
         
-        # Linear workspace
+        # Comprehensive Linear workspace context
         try:
             linear_context = self.linear_service.get_workspace_context()
-            context_parts.append(f"\n🎯 LINEAR WORKSPACE:")
-            context_parts.append(f"• Active Projects: {len(linear_context.projects)}")
-            context_parts.append(f"• Open Issues: {len([i for i in linear_context.issues if i.state_type != 'completed'])}")
-            
-            for project in linear_context.projects[:3]:
-                context_parts.append(f"• {project.name}: {project.progress or 0:.1f}% complete")
+            linear_formatted = format_linear_context_comprehensive(linear_context)
+            context_parts.append(linear_formatted)
                 
         except Exception as e:
-            context_parts.append(f"\n🎯 LINEAR: unavailable ({str(e)[:50]})")
+            context_parts.append(f"🎯 LINEAR: unavailable ({str(e)[:50]})")
+            context_parts.append("")
         
-        context_parts.append(f"\n🕐 Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+        context_parts.append(f"🕐 Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
         
         return "\n".join(context_parts) if context_parts else "📝 Basic AI assistant ready to help"
     
