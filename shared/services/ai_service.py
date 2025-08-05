@@ -5,6 +5,8 @@ OpenAI service for AI-powered transcript processing.
 from typing import Dict, Any, List, Optional
 from openai import OpenAI
 from pydantic import BaseModel
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
 from shared.core.models import GeneratedIssue, GeneratedIssuesResponse
 from shared.core.config import Config
@@ -14,10 +16,16 @@ class OpenAIService:
     """Service for interacting with OpenAI API."""
     
     def __init__(self, api_key: str = None, model: str = None, max_tokens: int = None, temperature: float = None):
-        self.client = OpenAI(api_key=api_key or Config.OPENAI_API_KEY)
+        self.client = OpenAI(
+            api_key=api_key or Config.OPENAI_API_KEY,
+            timeout=30.0  # 30 second timeout
+        )
         self.model = model or Config.OPENAI_MODEL
         self.max_tokens = max_tokens or Config.OPENAI_MAX_TOKENS
         self.temperature = temperature or Config.OPENAI_TEMPERATURE
+        
+        # Thread pool for async execution
+        self.executor = ThreadPoolExecutor(max_workers=4)
     
     def process_transcript(
         self, 
@@ -62,7 +70,8 @@ class OpenAIService:
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
                 ],
-                temperature=self.temperature
+                temperature=self.temperature,
+                max_tokens=self.max_tokens
             )
             
             return response.choices[0].message.content
@@ -70,6 +79,41 @@ class OpenAIService:
         except Exception as e:
             print(f"Error calling OpenAI API for text generation: {e}")
             raise 
+    
+    async def generate_text_async(self, system_prompt: str, user_prompt: str) -> str:
+        """Generate text using OpenAI API asynchronously."""
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(
+            self.executor, 
+            self.generate_text, 
+            system_prompt, 
+            user_prompt
+        )
+    
+    async def _call_openai_structured_async(self, system_prompt: str, user_prompt: str) -> List[str]:
+        """Call OpenAI API with structured output asynchronously, returning text results."""
+        loop = asyncio.get_event_loop()
+        
+        def _sync_call():
+            try:
+                print(f"DEBUG: Making OpenAI API call with model: {self.model}")
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    temperature=self.temperature,
+                    max_tokens=self.max_tokens
+                )
+                result = [response.choices[0].message.content]
+                print(f"DEBUG: OpenAI API success, content length: {len(result[0]) if result[0] else 0}")
+                return result
+            except Exception as e:
+                print(f"DEBUG: OpenAI API error: {type(e).__name__}: {str(e)}")
+                return ["I couldn't generate a response at this time."]
+        
+        return await loop.run_in_executor(self.executor, _sync_call)
     
     def get_structured_response(self, system_prompt: str, user_prompt: str, response_model: BaseModel) -> Dict[str, Any]:
         """Call OpenAI API and get a structured response based on a Pydantic model."""

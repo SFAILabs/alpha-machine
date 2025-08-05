@@ -1,0 +1,102 @@
+{
+  "display_information": {
+    "name": "Alpha Machine Bot",
+    "description": "AI-powered assistant for project management, meeting summaries, and team collaboration",
+    "background_color": "#2c3e50",
+    "long_description": "Alpha Machine Bot integrates with Linear, Supabase, and OpenAI to provide intelligent assistance for your team. Get meeting summaries, create and update tickets, track team member work, and chat with an AI that understands your project context."
+  },
+  "features": {
+    "app_home": {
+      "home_tab_enabled": true,
+      "messages_tab_enabled": true
+    },
+    "bot_user": {
+      "display_name": "Alpha Machine",
+      "always_online": true
+    },
+    "slash_commands": [
+      {
+        "command": "/chat",
+        "url": "https://slackbot-service-zyt7rmwq2a-uc.a.run.app/slack/commands",
+        "description": "Chat with AI assistant about projects and work",
+        "usage_hint": "What are our current project priorities?",
+        "should_escape": false
+      },
+      {
+        "command": "/summarize",
+        "url": "https://slackbot-service-zyt7rmwq2a-uc.a.run.app/slack/commands",
+        "description": "Get meeting summaries or client status updates",
+        "usage_hint": "last meeting | client [client_name]",
+        "should_escape": false
+      },
+      {
+        "command": "/create",
+        "url": "https://slackbot-service-zyt7rmwq2a-uc.a.run.app/slack/commands",
+        "description": "Create Linear tickets with AI assistance",
+        "usage_hint": "Fix login bug with better error handling",
+        "should_escape": false
+      },
+      {
+        "command": "/update",
+        "url": "https://slackbot-service-zyt7rmwq2a-uc.a.run.app/slack/commands",
+        "description": "Update existing Linear tickets",
+        "usage_hint": "ABC-123 to in progress",
+        "should_escape": false
+      },
+      {
+        "command": "/teammember",
+        "url": "https://slackbot-service-zyt7rmwq2a-uc.a.run.app/slack/commands",
+        "description": "Get team member information and current work",
+        "usage_hint": "john@company.com",
+        "should_escape": false
+      },
+      {
+        "command": "/weekly-summary",
+        "url": "https://slackbot-service-zyt7rmwq2a-uc.a.run.app/slack/commands",
+        "description": "Generate comprehensive weekly team report",
+        "usage_hint": "(no parameters needed)",
+        "should_escape": false
+      }
+    ]
+  },
+  "oauth_config": {
+    "scopes": {
+      "bot": [
+        "app_mentions:read",
+        "channels:history",
+        "channels:read",
+        "chat:write",
+        "commands",
+        "groups:history",
+        "groups:read",
+        "im:history",
+        "im:read",
+        "im:write",
+        "mpim:history",
+        "mpim:read",
+        "reactions:read",
+        "users:read",
+        "users:read.email",
+        "team:read"
+      ]
+    }
+  },
+  "settings": {
+    "event_subscriptions": {
+      "request_url": "https://slackbot-service-zyt7rmwq2a-uc.a.run.app/slack/events",
+      "bot_events": [
+        "app_mention",
+        "message.im",
+        "reaction_added",
+        "team_join"
+      ]
+    },
+    "interactivity": {
+      "is_enabled": true,
+      "request_url": "https://slackbot-service-zyt7rmwq2a-uc.a.run.app/slack/interactive"
+    },
+    "org_deploy_enabled": false,
+    "socket_mode_enabled": false,
+    "token_rotation_enabled": false
+  }
+}

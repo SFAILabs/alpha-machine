@@ -10,7 +10,7 @@ from datetime import datetime
 from shared.core.config import Config
 from shared.services.slack_service import SlackService
 from shared.services.ai_service import OpenAIService
-from .command_handler import SlackCommandHandler
+from command_handler import SlackCommandHandler
 
 
 class SlackEventHandler:
@@ -90,8 +90,8 @@ User mentioned me and said: {text}
 
 Please respond helpfully."""
 
-            ai_response = await self.ai_service._call_openai_structured(system_prompt, user_prompt)
-            response_text = ai_response[0] if ai_response else "Hi there! I'm here to help with your questions."
+            ai_response = await self.ai_service.generate_text_async(system_prompt, user_prompt)
+            response_text = ai_response if ai_response else "Hi there! I'm here to help with your questions."
             
             # Send response to the channel
             self.slack_service.send_message(
@@ -139,8 +139,8 @@ User sent me a DM: {text}
 
 Please respond helpfully."""
 
-            ai_response = await self.ai_service._call_openai_structured(system_prompt, user_prompt)
-            response_text = ai_response[0] if ai_response else "Hi! I'm here to help. You can ask me about projects, meetings, or use slash commands like /chat."
+            ai_response = await self.ai_service.generate_text_async(system_prompt, user_prompt)
+            response_text = ai_response if ai_response else "Hi! I'm here to help. You can ask me about projects, meetings, or use slash commands like /chat."
             
             # Send response to the DM
             self.slack_service.send_message(

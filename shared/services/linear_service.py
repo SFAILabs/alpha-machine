@@ -1,9 +1,9 @@
 """
-Linear API service for managing projects, issues, and workspace data.
+Linear service for Linear integrations and ticket management.
 """
 
+from typing import Dict, Any, List, Optional
 import requests
-from typing import List, Optional, Dict, Any
 from shared.core.models import LinearProject, LinearMilestone, LinearIssue, LinearContext
 from shared.core.config import Config
 
@@ -529,9 +529,9 @@ class LinearService:
         
         if 'assignee' in update_data:
             # Get assignee ID
-            team_context = self.get_team_by_name(self.team_name)
+            team_context = self.get_team_id(self.team_name) # This line was changed from get_team_by_name to get_team_id
             if team_context:
-                for member in team_context.members:
+                for member in team_context: # This line was changed from team_context.members to team_context
                     if (member.email == update_data['assignee'] or 
                         member.name.lower() == update_data['assignee'].lower()):
                         input_data['assigneeId'] = member.id

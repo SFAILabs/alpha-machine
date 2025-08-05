@@ -22,6 +22,7 @@ dependencies = [
     "fastapi",
     "uvicorn",
     "python-dotenv",
+    "python-multipart",
     "alphamachine-core",
     "alphamachine-services"
 ]

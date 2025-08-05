@@ -1,0 +1,62 @@
+# Cloud Run Service Configurations
+# This file defines the deployment settings for each service
+
+# Transcript Service
+transcript-service:
+  name: transcript-service
+  region: us-central1
+  platform: managed
+  allow-unauthenticated: true
+  port: 8000
+  memory: 1Gi
+  cpu: 1
+  max-instances: 10
+  timeout: 300s
+  env-vars:
+    PORT: "8000"
+    ENVIRONMENT: "production"
+
+# Slackbot Service  
+slackbot-service:
+  name: slackbot-service
+  region: us-central1
+  platform: managed
+  allow-unauthenticated: true
+  port: 8001
+  memory: 1Gi
+  cpu: 1
+  max-instances: 10
+  timeout: 300s
+  env-vars:
+    PORT: "8001"
+    ENVIRONMENT: "production"
+
+# Linear Service
+linear-service:
+  name: linear-service
+  region: us-central1
+  platform: managed
+  allow-unauthenticated: true
+  port: 8002
+  memory: 1Gi
+  cpu: 1
+  max-instances: 10
+  timeout: 300s
+  env-vars:
+    PORT: "8002"
+    ENVIRONMENT: "production"
+
+# Notion Service
+notion-service:
+  name: notion-service
+  region: us-central1
+  platform: managed
+  allow-unauthenticated: true
+  port: 8003
+  memory: 1Gi
+  cpu: 1
+  max-instances: 10
+  timeout: 300s
+  env-vars:
+    PORT: "8003"
+    ENVIRONMENT: "production" 

@@ -6,8 +6,11 @@ Simplified handler that uses prompts.yml and Slack's native history.
 
 import json
 import requests
+import sys
+import traceback
 from typing import Dict, Any, List
 from datetime import datetime, timedelta
+import logging
 
 from shared.core.config import Config
 from shared.core.utils import load_prompts
@@ -17,6 +20,8 @@ from shared.services.linear_service import LinearService
 from shared.services.notion_service import NotionService
 from shared.services.supabase_service import SupabaseService
 
+# Configure logging
+logger = logging.getLogger(__name__)
 
 class SlackCommandHandler:
     """
@@ -50,6 +55,9 @@ class SlackCommandHandler:
         command = payload.get("command", "")
         response_url = payload.get("response_url", "")
         
+        logger.info(f"BACKGROUND TASK: Starting to process command: {command}")
+        print(f"=== BACKGROUND TASK: Starting to process command: {command} ===", flush=True)
+        
         try:
             if command == "/chat":
                 response = await self._handle_chat_command(payload)
@@ -69,14 +77,63 @@ class SlackCommandHandler:
                     "text": f"Unknown command: {command}"
                 }
             
+            # Convert string responses to proper Slack format
+            if isinstance(response, str):
+                response = {
+                    "response_type": "in_channel",
+                    "text": response
+                }
+            
+            logger.info(f"BACKGROUND TASK: About to send response to {response_url}")
+            print(f"=== BACKGROUND TASK: About to send response to Slack ===", flush=True)
             await self._send_response(response_url, response)
+            logger.info(f"BACKGROUND TASK: Response sent successfully")
+            print(f"=== BACKGROUND TASK: Response sent successfully ===", flush=True)
             
         except Exception as e:
+            logger.error(f"BACKGROUND TASK ERROR: {type(e).__name__}: {str(e)}")
+            print(f"=== BACKGROUND TASK ERROR: {type(e).__name__}: {str(e)} ===", flush=True)
+            print(f"=== BACKGROUND TASK TRACEBACK: {traceback.format_exc()} ===", flush=True)
             error_response = {
                 "response_type": "ephemeral",
                 "text": f"❌ Error processing {command}: {str(e)}"
             }
             await self._send_response(response_url, error_response)
+    
+    async def handle_command_sync(self, payload: Dict[str, Any]) -> str:
+        """SYNCHRONOUS version - returns AI response text directly (for testing)."""
+        command = payload.get("command", "")
+        
+        print(f"=== SYNC HANDLER: Processing {command} ===", flush=True)
+        
+        try:
+            if command == "/chat":
+                response = await self._handle_chat_command(payload)
+            elif command == "/summarize":
+                response = await self._handle_summarize_command(payload)
+            elif command == "/create-ticket" or command == "/create":
+                response = await self._handle_create_ticket_command(payload)
+            elif command == "/update":
+                response = await self._handle_update_ticket_command(payload)
+            elif command == "/teammember":
+                response = await self._handle_teammember_command(payload)
+            elif command == "/weekly-summary":
+                response = await self._handle_weekly_summary_command(payload)
+            else:
+                return f"Unknown command: {command}"
+            
+            # Extract just the text from the response
+            if isinstance(response, str):
+                response_text = response
+            else:
+                response_text = response.get("text", "No response text")
+            print(f"=== SYNC HANDLER: Generated response: {response_text[:100]}... ===", flush=True)
+            return response_text
+            
+        except Exception as e:
+            print(f"=== SYNC HANDLER ERROR: {str(e)} ===", flush=True)
+            print(f"=== SYNC HANDLER TRACEBACK: {traceback.format_exc()} ===", flush=True)
+            return f"❌ Error processing {command}: {str(e)}"
     
     async def _handle_chat_command(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         """Handle /chat command using prompts.yml and Slack history."""
@@ -109,10 +166,30 @@ class SlackCommandHandler:
         )
         
         try:
-            response_text = self.ai_service._call_openai_structured(system_prompt, user_prompt)
-            response_text = response_text[0] if response_text else "I couldn't generate a response at this time."
+            # Use the async text generation method for chat responses
+            print(f"=== CHAT: About to call AI service with model: {self.ai_service.model} ===", flush=True)
+            print(f"=== CHAT: AI service client type: {type(self.ai_service.client)} ===", flush=True)
+            print(f"=== CHAT: System prompt length: {len(system_prompt)} ===", flush=True)
+            print(f"=== CHAT: User prompt length: {len(user_prompt)} ===", flush=True)
+            
+            # Call AI service to generate response
+            response_text = await self.ai_service.generate_text_async(system_prompt, user_prompt)
+            
+            print(f"=== CHAT: AI service returned response of length: {len(response_text) if response_text else 0} ===", flush=True)
+            print(f"=== CHAT: AI RESPONSE CONTENT: {response_text} ===", flush=True)
+
+            if response_text:
+                return f"🤖 **AI Response:**\n{response_text}"
+            else:
+                return "🤖 **AI Response:**\nI couldn't generate a response at this time."
+        
         except Exception as e:
-            response_text = f"Error generating AI response: {str(e)}"
+            print(f"=== CHAT AI ERROR: {type(e).__name__}: {str(e)} ===", flush=True)
+            print(f"=== CHAT AI TRACEBACK: {traceback.format_exc()} ===", flush=True)
+            
+            logger.error(f"CHAT AI ERROR: {type(e).__name__}: {str(e)}")
+            logger.error(f"CHAT AI TRACEBACK: {traceback.format_exc()}")
+            response_text = f"AI Exception: {type(e).__name__}: {str(e)}"
         
         return {
             "response_type": "ephemeral",
@@ -172,7 +249,8 @@ class SlackCommandHandler:
         )
         
         try:
-            ai_response = self.ai_service._call_openai_structured(system_prompt, user_prompt)
+            # Use async text generation for create tickets
+            ai_response = await self.ai_service._call_openai_structured_async(system_prompt, user_prompt)
             
             # If not in test mode, return the analysis
             if not Config.LINEAR_TEST_MODE:
@@ -199,7 +277,7 @@ class SlackCommandHandler:
         except json.JSONDecodeError:
             return {
                 "response_type": "ephemeral",
-                "text": f"❌ **Error:** The AI returned an invalid format. Analysis:\n\n{ai_response[0]}"
+                "text": f"❌ **Error:** The AI returned an invalid format. Analysis:\n\n{ai_response[0] if 'ai_response' in locals() else 'No response'}"
             }
         except Exception as e:
             return {
@@ -238,7 +316,8 @@ class SlackCommandHandler:
         )
         
         try:
-            ai_response = self.ai_service._call_openai_structured(system_prompt, user_prompt)
+            # Use async text generation for update tickets
+            ai_response = await self.ai_service._call_openai_structured_async(system_prompt, user_prompt)
             
             # If not in test mode, return the analysis
             if not Config.LINEAR_TEST_MODE:
@@ -276,7 +355,7 @@ class SlackCommandHandler:
         except json.JSONDecodeError:
             return {
                 "response_type": "ephemeral",
-                "text": f"❌ **Error:** The AI returned an invalid format. Analysis:\n\n{ai_response[0]}"
+                "text": f"❌ **Error:** The AI returned an invalid format. Analysis:\n\n{ai_response[0] if 'ai_response' in locals() else 'No response'}"
             }
         except Exception as e:
             return {
@@ -310,8 +389,9 @@ class SlackCommandHandler:
         )
         
         try:
-            ai_response = self.ai_service._call_openai_structured(system_prompt, user_prompt)
-            ai_response = ai_response[0] if ai_response else "No information found for this team member."
+            # Use async text generation for team member info
+            ai_response = await self.ai_service.generate_text_async(system_prompt, user_prompt)
+            ai_response = ai_response if ai_response else "No information found for this team member."
             
             return {
                 "response_type": "ephemeral",
@@ -339,8 +419,9 @@ class SlackCommandHandler:
         user_prompt = prompt_config['user_prompt'].format(context=context)
         
         try:
-            ai_response = self.ai_service._call_openai_structured(system_prompt, user_prompt)
-            ai_response = ai_response[0] if ai_response else "Unable to generate weekly summary."
+            # Use async text generation for weekly summary
+            ai_response = await self.ai_service.generate_text_async(system_prompt, user_prompt)
+            ai_response = ai_response if ai_response else "Unable to generate weekly summary."
             
             return {
                 "response_type": "in_channel",
@@ -390,8 +471,9 @@ class SlackCommandHandler:
                 meeting_transcript=raw_transcript[:3000]
             )
             
-            summary = self.ai_service._call_openai_structured(system_prompt, user_prompt)
-            summary = summary[0] if summary else "Unable to generate meeting summary."
+            # Use async text generation for meeting summary
+            summary = await self.ai_service.generate_text_async(system_prompt, user_prompt)
+            summary = summary if summary else "Unable to generate meeting summary."
             
             return {
                 "response_type": "ephemeral",
@@ -430,8 +512,9 @@ class SlackCommandHandler:
                 client_name=client_name
             )
             
-            summary = self.ai_service._call_openai_structured(system_prompt, user_prompt)
-            summary = summary[0] if summary else f"No information found for client: {client_name}"
+            # Use async text generation for client summary
+            summary = await self.ai_service.generate_text_async(system_prompt, user_prompt)
+            summary = summary if summary else f"No information found for client: {client_name}"
             
             return {
                 "response_type": "ephemeral",
@@ -448,12 +531,12 @@ class SlackCommandHandler:
         """Get comprehensive context from all sources."""
         context_parts = []
         
+        # Recent transcripts (handle database errors gracefully)
         try:
-            # Recent transcripts
             end_date = datetime.now().isoformat()
             start_date = (datetime.now() - timedelta(days=7)).isoformat()
             
-            transcripts = self.supabase_service.get_transcripts_by_date_range(start_date, end_date)
+            transcripts = self.supabase_service.get_filtered_transcripts_by_date_range(start_date, end_date)
             
             if transcripts:
                 context_parts.append("📋 RECENT MEETINGS:")
@@ -463,26 +546,27 @@ class SlackCommandHandler:
                     ai_analysis = filtered_data.get('ai_analysis', '')
                     
                     context_parts.append(f"• {meeting_date}: {ai_analysis[:200]}..." if ai_analysis else f"• {meeting_date}: Meeting recorded")
-            
-            # Linear workspace
-            try:
-                linear_context = self.linear_service.get_workspace_context()
-                context_parts.append(f"\n🎯 LINEAR WORKSPACE:")
-                context_parts.append(f"• Active Projects: {len(linear_context.projects)}")
-                context_parts.append(f"• Open Issues: {len([i for i in linear_context.issues if i.state != 'Done'])}")
-                
-                for project in linear_context.projects[:3]:
-                    context_parts.append(f"• {project.name}: {project.progress or 0:.1f}% complete")
-                    
-            except Exception as e:
-                context_parts.append(f"\n🎯 LINEAR: unavailable ({str(e)[:50]})")
-            
-            context_parts.append(f"\n🕐 Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
-            
         except Exception as e:
-            context_parts.append(f"❌ Error gathering context: {str(e)}")
+            # Don't let database errors stop the entire context retrieval
+            print(f"=== CONTEXT: Transcript retrieval failed: {str(e)} ===", flush=True)
+            context_parts.append("📋 MEETINGS: Database unavailable")
         
-        return "\n".join(context_parts) if context_parts else "No context available"
+        # Linear workspace
+        try:
+            linear_context = self.linear_service.get_workspace_context()
+            context_parts.append(f"\n🎯 LINEAR WORKSPACE:")
+            context_parts.append(f"• Active Projects: {len(linear_context.projects)}")
+            context_parts.append(f"• Open Issues: {len([i for i in linear_context.issues if i.state_type != 'completed'])}")
+            
+            for project in linear_context.projects[:3]:
+                context_parts.append(f"• {project.name}: {project.progress or 0:.1f}% complete")
+                
+        except Exception as e:
+            context_parts.append(f"\n🎯 LINEAR: unavailable ({str(e)[:50]})")
+        
+        context_parts.append(f"\n🕐 Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+        
+        return "\n".join(context_parts) if context_parts else "📝 Basic AI assistant ready to help"
     
     def _get_recent_slack_history(self, channel_id: str, user_id: str, limit: int = 5) -> str:
         """Get recent Slack message history for context."""
@@ -497,6 +581,20 @@ class SlackCommandHandler:
         """Send response back to Slack using response URL."""
         try:
             headers = {"Content-Type": "application/json"}
-            requests.post(response_url, json=response, headers=headers, timeout=10)
+            # Use a shorter timeout for the response to Slack
+            response_result = requests.post(response_url, json=response, headers=headers, timeout=5)
+            if response_result.status_code != 200:
+                logger.warning(f"Failed to send response to Slack: {response_result.status_code} - {response_result.text}")
+        except requests.exceptions.Timeout:
+            logger.warning(f"Timeout sending response to Slack: {response_url}")
+            # Try once more with a fallback message
+            try:
+                fallback_response = {
+                    "response_type": "ephemeral",
+                    "text": "⚠️ Response took longer than expected. The operation may still be processing."
+                }
+                requests.post(response_url, json=fallback_response, headers=headers, timeout=3)
+            except Exception as fallback_error:
+                logger.error(f"Failed to send fallback response: {fallback_error}")
         except Exception as e:
-            print(f"Error sending response to Slack: {e}") 
+            logger.error(f"Error sending response to Slack: {e}") 

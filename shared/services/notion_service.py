@@ -1,5 +1,5 @@
 """
-Notion service for Notion operations across all flows.
+Notion service for Notion integrations.
 """
 
 from typing import Dict, Any, List, Optional
