@@ -44,3 +44,14 @@ __pycache__/
 *.pyc
 __pycache__/
 **/__pycache__/
+
+# Test and utility scripts
+test_*.py
+test_*.sh
+*_test.py
+README_TEST_SCRIPT.md
+monitor_slack_logs.sh
+slack_api_commands.sh
+update_slack_*.sh
+services/*/requirements.txt
+
