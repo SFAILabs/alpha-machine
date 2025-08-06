@@ -1,20 +1,20 @@
-# Use an official Python runtime as a parent image
-FROM python:3.11-slim
+# Use Python slim image with uv for fast dependency management
+FROM python:3.13-slim
 
-# Set the working directory in the container
-WORKDIR /app
+# Install uv for fast Python package management
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 
-# Copy the requirements file into the container at /app
-COPY pyproject.toml .
+# Set the working directory
+WORKDIR /workspace
 
-# Install any needed packages specified in pyproject.toml
-RUN pip install --no-cache-dir .
+# Copy the entire workspace (monorepo structure)
+COPY . .
 
-# Copy the rest of the application's code into the container
-COPY src/ /app/src
+# Install dependencies using uv with frozen lockfile
+RUN uv sync --frozen
 
-# Make port 8002 available to the world outside this container
-EXPOSE 8002
+# Expose the service port
+EXPOSE 8003
 
-# Run main.py when the container launches
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8002"] 
+# Run the service using uv
+CMD ["uv", "run", "uvicorn", "services.notion.main:app", "--host", "0.0.0.0", "--port", "8003"] 

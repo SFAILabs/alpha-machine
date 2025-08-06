@@ -236,6 +236,334 @@ Feel free to mention me (@Alpha Machine) in any channel or send me a DM anytime!
                 except Exception as e:
                     print(f"Error handling summary button: {e}")
             
+            elif action_id == "transcript_selection":
+                # Handle transcript dropdown selection - store the selection
+                try:
+                    selected_values = action.get("selected_options", [])
+                    transcript_ids = [opt.get("value") for opt in selected_values]
+                    user_id = user.get("id")
+                    
+                    # Store selection for this user
+                    self.command_handler._store_user_selection(user_id, transcript_ids)
+                    
+                    selected_count = len(transcript_ids)
+                    response_text = f"📋 Selected {selected_count} transcript(s). Click '✅ Use Selected' to confirm, then use `/chat [your question]`."
+                    
+                    # Send ephemeral response
+                    self.slack_service.send_message(
+                        channel=channel.get("id"),
+                        text=response_text,
+                        user=user_id
+                    )
+                    
+                except Exception as e:
+                    print(f"Error handling transcript selection: {e}")
+            
+            elif action_id == "use_selected_transcripts":
+                # Handle "Use Selected" button click
+                try:
+                    user_id = user.get("id")
+                    selected_transcript_ids = self.command_handler._get_user_selection(user_id)
+                    
+                    if selected_transcript_ids:
+                        response_text = (
+                            f"🎯 **{len(selected_transcript_ids)} transcript(s) selected!** \n\n"
+                            "✅ **Ready!** Now use `/chat [your question]` and I'll analyze only the selected transcripts.\n\n"
+                            "💡 **Example**: `/chat What budget decisions were made in the selected meetings?`\n\n"
+                            "⏰ Selection expires in 10 minutes."
+                        )
+                    else:
+                        response_text = (
+                            "❌ **No transcripts selected.** Please select transcripts from the dropdown first, then click this button."
+                        )
+                    
+                    # Send follow-up instructions
+                    self.slack_service.send_message(
+                        channel=channel.get("id"),
+                        text=response_text,
+                        user=user_id
+                    )
+                    
+                except Exception as e:
+                    print(f"Error handling use selected transcripts: {e}")
+            
+            elif action_id == "use_all_transcripts":
+                # Handle "Use All Recent" button click
+                try:
+                    response_text = (
+                        "🔄 **Using all recent transcripts!** This is the default behavior.\n"
+                        "Use `/chat [your question]` normally to get context from all recent meetings.\n\n"
+                        "💡 **Example**: `/chat What are our current project priorities?`"
+                    )
+                    
+                    # Send follow-up instructions
+                    self.slack_service.send_message(
+                        channel=channel.get("id"),
+                        text=response_text,
+                        user=user.get("id")
+                    )
+                    
+                except Exception as e:
+                    print(f"Error handling use all transcripts: {e}")
+            
+            elif action_id == "chat_with_transcript_selection":
+                # Handle transcript selection for /chat-with command
+                try:
+                    selected_values = action.get("selected_options", [])
+                    transcript_ids = [opt.get("value") for opt in selected_values]
+                    user_id = user.get("id")
+                    
+                    # Store selection for this user
+                    self.command_handler._store_user_selection(user_id, transcript_ids)
+                    
+                    selected_count = len(transcript_ids)
+                    response_text = f"📋 Selected {selected_count} transcript(s). Click '🚀 Answer with Selected' to get your AI response."
+                    
+                    # Send ephemeral response
+                    self.slack_service.send_message(
+                        channel=channel.get("id"),
+                        text=response_text,
+                        user=user_id
+                    )
+                    
+                except Exception as e:
+                    print(f"Error handling chat-with transcript selection: {e}")
+            
+            elif action_id == "answer_with_selected":
+                # Handle "Answer with Selected" button - process immediately
+                try:
+                    user_id = user.get("id")
+                    user_question = value  # The question is stored in the button value
+                    selected_transcript_ids = self.command_handler._get_user_selection(user_id)
+                    
+                    if selected_transcript_ids and user_question:
+                        # Clear the selection and process the query
+                        self.command_handler._clear_user_selection(user_id)
+                        
+                        # Process the chat with selected transcripts
+                        response = await self.command_handler._handle_chat_with_selected_transcripts(
+                            selected_transcript_ids, user_question
+                        )
+                        
+                        # Send the AI response
+                        response_text = response.get('text', 'No response generated')
+                        self.slack_service.send_message(
+                            channel=channel.get("id"),
+                            text=response_text,
+                            user=user_id
+                        )
+                    else:
+                        error_msg = "❌ Please select transcripts first, or the question was not found."
+                        self.slack_service.send_message(
+                            channel=channel.get("id"),
+                            text=error_msg,
+                            user=user_id
+                        )
+                        
+                except Exception as e:
+                    print(f"Error handling answer with selected: {e}")
+                    error_msg = f"❌ Error processing your request: {str(e)}"
+                    self.slack_service.send_message(
+                        channel=channel.get("id"),
+                        text=error_msg,
+                        user=user.get("id")
+                    )
+            
+            elif action_id == "answer_with_all":
+                # Handle "Use All Recent" button - process with default context
+                try:
+                    user_id = user.get("id")
+                    user_question = value  # The question is stored in the button value
+                    
+                    if user_question:
+                        # Create a mock payload for the regular chat command
+                        chat_payload = {
+                            "text": user_question,
+                            "channel_id": channel.get("id"),
+                            "user_id": user_id
+                        }
+                        
+                        # Process with regular chat command (uses all recent transcripts)
+                        response = await self.command_handler._handle_chat_command(chat_payload)
+                        
+                        # Send the AI response
+                        response_text = response.get('text', 'No response generated')
+                        self.slack_service.send_message(
+                            channel=channel.get("id"),
+                            text=response_text,
+                            user=user_id
+                        )
+                    else:
+                        error_msg = "❌ Question not found."
+                        self.slack_service.send_message(
+                            channel=channel.get("id"),
+                            text=error_msg,
+                            user=user_id
+                        )
+                        
+                except Exception as e:
+                    print(f"Error handling answer with all: {e}")
+                    error_msg = f"❌ Error processing your request: {str(e)}"
+                    self.slack_service.send_message(
+                        channel=channel.get("id"),
+                        text=error_msg,
+                        user=user.get("id")
+                    )
+            
+            elif action_id == "chat_inline_transcript_selection":
+                # Handle transcript selection for /chat with [question]
+                try:
+                    selected_values = action.get("selected_options", [])
+                    transcript_ids = [opt.get("value") for opt in selected_values]
+                    user_id = user.get("id")
+                    
+                    # Store selection for this user
+                    self.command_handler._store_user_selection(user_id, transcript_ids)
+                    
+                    selected_count = len(transcript_ids)
+                    response_text = f"📋 Selected {selected_count} transcript(s). Click '🚀 Answer with Selected' to get your AI response."
+                    
+                    # Send ephemeral response
+                    self.slack_service.send_message(
+                        channel=channel.get("id"),
+                        text=response_text,
+                        user=user_id
+                    )
+                    
+                except Exception as e:
+                    print(f"Error handling chat inline transcript selection: {e}")
+            
+            elif action_id == "answer_inline_selected":
+                # Handle "Answer with Selected" button for inline questions
+                try:
+                    user_id = user.get("id")
+                    user_question = value  # The question is stored in the button value
+                    selected_transcript_ids = self.command_handler._get_user_selection(user_id)
+                    
+                    if selected_transcript_ids and user_question:
+                        # Clear the selection and process the query
+                        self.command_handler._clear_user_selection(user_id)
+                        
+                        # Process the chat with selected transcripts
+                        response = await self.command_handler._handle_chat_with_selected_transcripts(
+                            selected_transcript_ids, user_question
+                        )
+                        
+                        # Send the AI response
+                        response_text = response.get('text', 'No response generated')
+                        self.slack_service.send_message(
+                            channel=channel.get("id"),
+                            text=response_text,
+                            user=user_id
+                        )
+                    else:
+                        error_msg = "❌ Please select transcripts first, or the question was not found."
+                        self.slack_service.send_message(
+                            channel=channel.get("id"),
+                            text=error_msg,
+                            user=user_id
+                        )
+                        
+                except Exception as e:
+                    print(f"Error handling answer inline selected: {e}")
+                    error_msg = f"❌ Error processing your request: {str(e)}"
+                    self.slack_service.send_message(
+                        channel=channel.get("id"),
+                        text=error_msg,
+                        user=user.get("id")
+                    )
+            
+            elif action_id == "answer_inline_all":
+                # Handle "Use All Recent" button for inline questions
+                try:
+                    user_id = user.get("id")
+                    user_question = value  # The question is stored in the button value
+                    
+                    if user_question:
+                        # Create a mock payload for the regular chat command
+                        chat_payload = {
+                            "text": user_question,
+                            "channel_id": channel.get("id"),
+                            "user_id": user_id
+                        }
+                        
+                        # Process with regular chat command (uses all recent transcripts)
+                        response = await self.command_handler._handle_chat_command(chat_payload)
+                        
+                        # Send the AI response
+                        response_text = response.get('text', 'No response generated')
+                        self.slack_service.send_message(
+                            channel=channel.get("id"),
+                            text=response_text,
+                            user=user_id
+                        )
+                    else:
+                        error_msg = "❌ Question not found."
+                        self.slack_service.send_message(
+                            channel=channel.get("id"),
+                            text=error_msg,
+                            user=user_id
+                        )
+                        
+                except Exception as e:
+                    print(f"Error handling answer inline all: {e}")
+                    error_msg = f"❌ Error processing your request: {str(e)}"
+                    self.slack_service.send_message(
+                        channel=channel.get("id"),
+                        text=error_msg,
+                        user=user.get("id")
+                    )
+            
+            elif action_id == "chat_select_transcript_selection":
+                # Handle transcript selection for /chat select
+                try:
+                    selected_values = action.get("selected_options", [])
+                    transcript_ids = [opt.get("value") for opt in selected_values]
+                    user_id = user.get("id")
+                    
+                    # Store selection for this user
+                    self.command_handler._store_user_selection(user_id, transcript_ids)
+                    
+                    selected_count = len(transcript_ids)
+                    response_text = f"📋 Selected {selected_count} transcript(s). Click '✅ Set Selection' to confirm."
+                    
+                    # Send ephemeral response
+                    self.slack_service.send_message(
+                        channel=channel.get("id"),
+                        text=response_text,
+                        user=user_id
+                    )
+                    
+                except Exception as e:
+                    print(f"Error handling chat select transcript selection: {e}")
+            
+            elif action_id == "set_transcript_selection":
+                # Handle "Set Selection" button for /chat select
+                try:
+                    user_id = user.get("id")
+                    selected_transcript_ids = self.command_handler._get_user_selection(user_id)
+                    
+                    if selected_transcript_ids:
+                        response_text = (
+                            f"✅ **{len(selected_transcript_ids)} transcript(s) selected!** \n\n"
+                            "🎯 **Ready!** Now use `/chat [your question]` and I'll analyze only the selected transcripts.\n\n"
+                            "💡 **Example**: `/chat What budget decisions were made?`\n\n"
+                            "⏰ Selection expires in 10 minutes."
+                        )
+                    else:
+                        response_text = (
+                            "❌ **No transcripts selected.** Please select transcripts from the dropdown first, then click this button."
+                        )
+                    
+                    self.slack_service.send_message(
+                        channel=channel.get("id"),
+                        text=response_text,
+                        user=user_id
+                    )
+                    
+                except Exception as e:
+                    print(f"Error handling set transcript selection: {e}")
+            
             # Add more button handlers as needed
     
     async def _handle_view_submission(self, payload: Dict[str, Any]) -> None:

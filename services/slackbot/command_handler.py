@@ -4,11 +4,12 @@ Slack Command Handler for Alpha Machine Bot
 Simplified handler that uses prompts.yml and Slack's native history.
 """
 
+import asyncio
 import json
 import requests
 import sys
 import traceback
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 import logging
 
@@ -20,6 +21,10 @@ from shared.services.linear_service import LinearService
 from shared.services.notion_service import NotionService
 from shared.services.supabase_service import SupabaseService
 from shared.core.models import LinearContext
+
+# Global storage for user transcript selections (in production, use Redis or database)
+USER_TRANSCRIPT_SELECTIONS = {}
+SELECTION_TIMEOUT_MINUTES = 10
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -193,6 +198,33 @@ class SlackCommandHandler:
         self.supabase_service = SupabaseService()
         self.prompts = load_prompts(Config.PROMPTS_FILE)
     
+    def _store_user_selection(self, user_id: str, transcript_ids: List[str]) -> None:
+        """Store user's transcript selection with timestamp."""
+        USER_TRANSCRIPT_SELECTIONS[user_id] = {
+            'transcript_ids': transcript_ids,
+            'timestamp': datetime.now()
+        }
+    
+    def _get_user_selection(self, user_id: str) -> Optional[List[str]]:
+        """Get user's stored transcript selection if still valid."""
+        if user_id not in USER_TRANSCRIPT_SELECTIONS:
+            return None
+        
+        selection_data = USER_TRANSCRIPT_SELECTIONS[user_id]
+        timestamp = selection_data['timestamp']
+        
+        # Check if selection has expired
+        if datetime.now() - timestamp > timedelta(minutes=SELECTION_TIMEOUT_MINUTES):
+            del USER_TRANSCRIPT_SELECTIONS[user_id]
+            return None
+        
+        return selection_data['transcript_ids']
+    
+    def _clear_user_selection(self, user_id: str) -> None:
+        """Clear user's transcript selection."""
+        if user_id in USER_TRANSCRIPT_SELECTIONS:
+            del USER_TRANSCRIPT_SELECTIONS[user_id]
+    
     async def handle_command(self, payload: Dict[str, Any]) -> None:
         """Route command to appropriate handler."""
         command = payload.get("command", "")
@@ -252,6 +284,7 @@ class SlackCommandHandler:
         try:
             if command == "/chat":
                 response = await self._handle_chat_command(payload)
+
             elif command == "/summarize":
                 response = await self._handle_summarize_command(payload)
             elif command == "/create-ticket" or command == "/create":
@@ -284,13 +317,33 @@ class SlackCommandHandler:
         channel_id = payload.get("channel_id", "")
         user_id = payload.get("user_id", "")
         
+        # Check if user wants to select transcripts interactively
+        if text.lower() in ["select", "choose", "pick", "transcripts"]:
+            return await self._show_transcript_selector_for_chat(channel_id, user_id)
+        elif text.lower().startswith("with "):
+            # User typed "/chat with [question]" 
+            question = text[5:].strip()  # Remove "with " prefix
+            if question:
+                return await self._handle_chat_with_selector_inline(payload, question)
+            else:
+                return await self._show_transcript_selector_for_chat(channel_id, user_id)
+        
         if not text:
             return {
                 "response_type": "ephemeral",
-                "text": "Please provide a question or message to chat about."
+                "text": "Please provide a question or message to chat about.\n\n💡 **Tips**:\n• `/chat select` - Choose specific transcripts\n• `/chat with [question]` - Choose transcripts for your question\n• `/chat [question]` - Use all recent context"
             }
         
-        # Get context and recent Slack history
+        # Check if user has selected specific transcripts
+        selected_transcript_ids = self._get_user_selection(user_id)
+        
+        if selected_transcript_ids:
+            # Use selected transcripts and clear the selection
+            print(f"=== CHAT: Using {len(selected_transcript_ids)} selected transcripts for user {user_id} ===", flush=True)
+            self._clear_user_selection(user_id)  # Clear after use
+            return await self._handle_chat_with_selected_transcripts(selected_transcript_ids, text)
+        
+        # Get context and recent Slack history (default behavior)
         context = await self._get_comprehensive_context()
         slack_history = self._get_recent_slack_history(channel_id, user_id)
         
@@ -318,48 +371,581 @@ class SlackCommandHandler:
             # Call AI service to generate response
             response_text = await self.ai_service.generate_text_async(system_prompt, user_prompt)
             
-            print(f"=== CHAT: AI service returned response of length: {len(response_text) if response_text else 0} ===", flush=True)
+            print(f"=== CHAT: AI service returned response of length: {len(response_text)} ===", flush=True)
             print(f"=== CHAT: AI RESPONSE CONTENT: {response_text} ===", flush=True)
-
-            if response_text:
-                return f"🤖 **AI Response:**\n{response_text}"
-            else:
-                return "🤖 **AI Response:**\nI couldn't generate a response at this time."
-        
-        except Exception as e:
-            print(f"=== CHAT AI ERROR: {type(e).__name__}: {str(e)} ===", flush=True)
-            print(f"=== CHAT AI TRACEBACK: {traceback.format_exc()} ===", flush=True)
             
-            logger.error(f"CHAT AI ERROR: {type(e).__name__}: {str(e)}")
-            logger.error(f"CHAT AI TRACEBACK: {traceback.format_exc()}")
-            response_text = f"AI Exception: {type(e).__name__}: {str(e)}"
+            return {
+                "response_type": "ephemeral",
+                "text": f"🤖 **AI Response:**\n{response_text}"
+            }
+            
+        except Exception as e:
+            print(f"=== CHAT ERROR: {str(e)} ===", flush=True)
+            return {
+                "response_type": "ephemeral",
+                "text": f"❌ Error generating response: {str(e)}"
+            }
+
+    async def _handle_chat_with_selector(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle /chat-with command - shows transcript selector with user's question."""
+        text = payload.get("text", "").strip()
+        channel_id = payload.get("channel_id", "")
+        user_id = payload.get("user_id", "")
         
-        return {
-            "response_type": "ephemeral",
-            "text": f"🤖 **AI Response:**\n\n{response_text}"
-        }
+        if not text:
+            return {
+                "response_type": "ephemeral",
+                "text": "Please provide your question.\n\n💡 **Usage**: `/chat-with What budget decisions were made?`"
+            }
+        
+        try:
+            # Get recent transcripts for selection
+            transcripts = self.supabase_service.get_recent_transcripts(limit=10)
+            
+            if not transcripts:
+                return {
+                    "response_type": "ephemeral",
+                    "text": "📭 No transcripts available for selection."
+                }
+            
+            # Build options for the dropdown
+            options = []
+            for transcript in transcripts:
+                filename = transcript.get('filename', 'Unknown Meeting')
+                created_date = transcript.get('created_at', 'Unknown date')
+                transcript_id = transcript.get('id', '')
+                
+                # Format date for display
+                try:
+                    if created_date and created_date != 'Unknown date':
+                        date_obj = datetime.fromisoformat(created_date.replace('Z', '+00:00'))
+                        formatted_date = date_obj.strftime('%m/%d %H:%M')
+                    else:
+                        formatted_date = 'Unknown date'
+                except:
+                    formatted_date = str(created_date)[:10] if created_date else 'Unknown date'
+                
+                # Create option for dropdown
+                option_text = f"{filename} ({formatted_date})"
+                options.append({
+                    "text": {
+                        "type": "plain_text",
+                        "text": option_text[:75]  # Slack limit
+                    },
+                    "value": transcript_id
+                })
+            
+            # Create the interactive message with dropdown and user's question
+            blocks = [
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": f"🎯 **Your Question**: {text}\n\n📋 *Select which transcripts to analyze:*"
+                    }
+                },
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": "🎛️ *Choose transcripts for context:*"
+                    },
+                    "accessory": {
+                        "type": "multi_static_select",
+                        "placeholder": {
+                            "type": "plain_text",
+                            "text": "Choose transcripts..."
+                        },
+                        "options": options,
+                        "action_id": "chat_with_transcript_selection"
+                    }
+                },
+                {
+                    "type": "actions",
+                    "elements": [
+                        {
+                            "type": "button",
+                            "text": {
+                                "type": "plain_text",
+                                "text": "🚀 Answer with Selected"
+                            },
+                            "style": "primary",
+                            "action_id": "answer_with_selected",
+                            "value": text  # Store the user's question
+                        },
+                        {
+                            "type": "button",
+                            "text": {
+                                "type": "plain_text",
+                                "text": "📋 Use All Recent"
+                            },
+                            "action_id": "answer_with_all",
+                            "value": text  # Store the user's question
+                        }
+                    ]
+                },
+                {
+                    "type": "context",
+                    "elements": [
+                        {
+                            "type": "mrkdwn",
+                            "text": "💡 Select transcripts above, then click a button to get your AI-powered answer."
+                        }
+                    ]
+                }
+            ]
+            
+            return {
+                "response_type": "ephemeral",
+                "blocks": blocks
+            }
+            
+        except Exception as e:
+            return {
+                "response_type": "ephemeral",
+                "text": f"❌ Error showing transcript selector: {str(e)}"
+            }
+
+    async def _handle_chat_with_selector_inline(self, payload: Dict[str, Any], question: str) -> Dict[str, Any]:
+        """Handle inline /chat with [question] - shows selector with the question embedded."""
+        try:
+            # Get recent transcripts for selection
+            transcripts = self.supabase_service.get_recent_transcripts(limit=10)
+            
+            if not transcripts:
+                return {
+                    "response_type": "ephemeral",
+                    "text": "📭 No transcripts available for selection."
+                }
+            
+            # Build options for the dropdown
+            options = []
+            for transcript in transcripts:
+                filename = transcript.get('filename', 'Unknown Meeting')
+                created_date = transcript.get('created_at', 'Unknown date')
+                transcript_id = transcript.get('id', '')
+                
+                # Format date for display
+                try:
+                    if created_date and created_date != 'Unknown date':
+                        date_obj = datetime.fromisoformat(created_date.replace('Z', '+00:00'))
+                        formatted_date = date_obj.strftime('%m/%d %H:%M')
+                    else:
+                        formatted_date = 'Unknown date'
+                except:
+                    formatted_date = str(created_date)[:10] if created_date else 'Unknown date'
+                
+                # Create option for dropdown
+                option_text = f"{filename} ({formatted_date})"
+                options.append({
+                    "text": {
+                        "type": "plain_text",
+                        "text": option_text[:75]  # Slack limit
+                    },
+                    "value": transcript_id
+                })
+            
+            # Create the interactive message with dropdown and user's question
+            blocks = [
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": f"🎯 **Your Question**: {question}\n\n📋 *Select which transcripts to analyze:*"
+                    }
+                },
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": "🎛️ *Choose transcripts for context:*"
+                    },
+                    "accessory": {
+                        "type": "multi_static_select",
+                        "placeholder": {
+                            "type": "plain_text",
+                            "text": "Choose transcripts..."
+                        },
+                        "options": options,
+                        "action_id": "chat_inline_transcript_selection"
+                    }
+                },
+                {
+                    "type": "actions",
+                    "elements": [
+                        {
+                            "type": "button",
+                            "text": {
+                                "type": "plain_text",
+                                "text": "🚀 Answer with Selected"
+                            },
+                            "style": "primary",
+                            "action_id": "answer_inline_selected",
+                            "value": question  # Store the user's question
+                        },
+                        {
+                            "type": "button",
+                            "text": {
+                                "type": "plain_text",
+                                "text": "📋 Use All Recent"
+                            },
+                            "action_id": "answer_inline_all",
+                            "value": question  # Store the user's question
+                        }
+                    ]
+                },
+                {
+                    "type": "context",
+                    "elements": [
+                        {
+                            "type": "mrkdwn",
+                            "text": "💡 Select transcripts above, then click a button to get your AI-powered answer."
+                        }
+                    ]
+                }
+            ]
+            
+            return {
+                "response_type": "ephemeral",
+                "blocks": blocks
+            }
+            
+        except Exception as e:
+            return {
+                "response_type": "ephemeral",
+                "text": f"❌ Error showing transcript selector: {str(e)}"
+            }
+
+    async def _show_transcript_selector_for_chat(self, channel_id: str, user_id: str) -> Dict[str, Any]:
+        """Show transcript selector for /chat select (without a predefined question)."""
+        try:
+            # Get recent transcripts for selection
+            transcripts = self.supabase_service.get_recent_transcripts(limit=10)
+            
+            if not transcripts:
+                return {
+                    "response_type": "ephemeral",
+                    "text": "📭 No transcripts available for selection."
+                }
+            
+            # Build options for the dropdown
+            options = []
+            for transcript in transcripts:
+                filename = transcript.get('filename', 'Unknown Meeting')
+                created_date = transcript.get('created_at', 'Unknown date')
+                transcript_id = transcript.get('id', '')
+                
+                # Format date for display
+                try:
+                    if created_date and created_date != 'Unknown date':
+                        date_obj = datetime.fromisoformat(created_date.replace('Z', '+00:00'))
+                        formatted_date = date_obj.strftime('%m/%d %H:%M')
+                    else:
+                        formatted_date = 'Unknown date'
+                except:
+                    formatted_date = str(created_date)[:10] if created_date else 'Unknown date'
+                
+                # Create option for dropdown
+                option_text = f"{filename} ({formatted_date})"
+                options.append({
+                    "text": {
+                        "type": "plain_text",
+                        "text": option_text[:75]  # Slack limit
+                    },
+                    "value": transcript_id
+                })
+            
+            # Create the interactive message for selection only
+            blocks = [
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": "📋 **Select Transcripts** for your next `/chat` command:\n\n🎛️ *Choose which transcripts to use as context:*"
+                    },
+                    "accessory": {
+                        "type": "multi_static_select",
+                        "placeholder": {
+                            "type": "plain_text",
+                            "text": "Choose transcripts..."
+                        },
+                        "options": options,
+                        "action_id": "chat_select_transcript_selection"
+                    }
+                },
+                {
+                    "type": "actions",
+                    "elements": [
+                        {
+                            "type": "button",
+                            "text": {
+                                "type": "plain_text",
+                                "text": "✅ Set Selection"
+                            },
+                            "style": "primary",
+                            "action_id": "set_transcript_selection"
+                        }
+                    ]
+                },
+                {
+                    "type": "context",
+                    "elements": [
+                        {
+                            "type": "mrkdwn",
+                            "text": "💡 After setting your selection, use `/chat [your question]` and it will use only the selected transcripts."
+                        }
+                    ]
+                }
+            ]
+            
+            return {
+                "response_type": "ephemeral",
+                "blocks": blocks
+            }
+            
+        except Exception as e:
+            return {
+                "response_type": "ephemeral",
+                "text": f"❌ Error showing transcript selector: {str(e)}"
+            }
+
+    async def _show_transcript_selector(self, channel_id: str, user_id: str) -> Dict[str, Any]:
+        """Show interactive transcript selection dropdown."""
+        try:
+            # Get recent transcripts for selection
+            transcripts = self.supabase_service.get_recent_transcripts(limit=10)
+            
+            if not transcripts:
+                return {
+                    "response_type": "ephemeral",
+                    "text": "📭 No transcripts available for selection."
+                }
+            
+            # Build options for the dropdown
+            options = []
+            for transcript in transcripts:
+                filename = transcript.get('filename', 'Unknown Meeting')
+                created_date = transcript.get('created_at', 'Unknown date')
+                transcript_id = transcript.get('id', '')
+                
+                # Format date for display
+                try:
+                    if created_date and created_date != 'Unknown date':
+                        date_obj = datetime.fromisoformat(created_date.replace('Z', '+00:00'))
+                        formatted_date = date_obj.strftime('%m/%d %H:%M')
+                    else:
+                        formatted_date = 'Unknown date'
+                except:
+                    formatted_date = str(created_date)[:10] if created_date else 'Unknown date'
+                
+                # Create option for dropdown
+                option_text = f"{filename} ({formatted_date})"
+                options.append({
+                    "text": {
+                        "type": "plain_text",
+                        "text": option_text[:75]  # Slack limit
+                    },
+                    "value": transcript_id
+                })
+            
+            # Create the interactive message with dropdown
+            blocks = [
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": "📋 *Select transcripts to include in your chat context:*\nChoose one or multiple transcripts, then ask your question."
+                    }
+                },
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": "🎯 *Available Transcripts:*"
+                    },
+                    "accessory": {
+                        "type": "multi_static_select",
+                        "placeholder": {
+                            "type": "plain_text",
+                            "text": "Choose transcripts..."
+                        },
+                        "options": options,
+                        "action_id": "transcript_selection"
+                    }
+                },
+                {
+                    "type": "actions",
+                    "elements": [
+                        {
+                            "type": "button",
+                            "text": {
+                                "type": "plain_text",
+                                "text": "✅ Use Selected"
+                            },
+                            "style": "primary",
+                            "action_id": "use_selected_transcripts",
+                            "value": "confirm"
+                        },
+                        {
+                            "type": "button",
+                            "text": {
+                                "type": "plain_text",
+                                "text": "🔄 Use All Recent"
+                            },
+                            "action_id": "use_all_transcripts",
+                            "value": "all"
+                        }
+                    ]
+                },
+                {
+                    "type": "context",
+                    "elements": [
+                        {
+                            "type": "mrkdwn",
+                            "text": "💡 After selecting, use `/chat [your question]` to ask with chosen context."
+                        }
+                    ]
+                }
+            ]
+            
+            return {
+                "response_type": "ephemeral",
+                "blocks": blocks
+            }
+            
+        except Exception as e:
+            return {
+                "response_type": "ephemeral",
+                "text": f"❌ Error showing transcript selector: {str(e)}"
+            }
+
+    async def _handle_chat_with_selected_transcripts(self, transcript_ids: List[str], user_question: str) -> Dict[str, Any]:
+        """Handle chat command with user-selected transcripts."""
+        try:
+            print(f"=== SELECTED TRANSCRIPTS: Processing {len(transcript_ids)} transcript(s) ===", flush=True)
+            start_time = datetime.now()
+            
+            # Get selected transcripts
+            selected_transcripts = []
+            for transcript_id in transcript_ids:
+                transcript = self.supabase_service.get_transcript_by_id(transcript_id)
+                if transcript:
+                    selected_transcripts.append(transcript)
+            
+            fetch_time = datetime.now()
+            print(f"=== SELECTED TRANSCRIPTS: Fetched in {(fetch_time - start_time).total_seconds():.2f}s ===", flush=True)
+            
+            if not selected_transcripts:
+                return {
+                    "response_type": "ephemeral",
+                    "text": "❌ Could not retrieve selected transcripts."
+                }
+            
+            # Build custom context with selected transcripts
+            context_parts = []
+            
+            # Selected transcripts context (FULL CONTENT)
+            context_parts.append("📋 SELECTED MEETING TRANSCRIPTS (COMPLETE CONTENT):")
+            context_parts.append("=" * 60)
+            context_parts.append(f"NOTE: You have access to ONLY these {len(selected_transcripts)} selected transcript(s). Do NOT reference any other meetings or transcripts.")
+            context_parts.append("=" * 60)
+            
+            for i, transcript in enumerate(selected_transcripts, 1):
+                filename = transcript.get('filename', 'Unknown Meeting')
+                created_date = transcript.get('created_at', 'Unknown date')
+                transcript_content = transcript.get('filtered_transcript', '')
+                
+                # Format date
+                try:
+                    if created_date and created_date != 'Unknown date':
+                        date_obj = datetime.fromisoformat(created_date.replace('Z', '+00:00'))
+                        formatted_date = date_obj.strftime('%Y-%m-%d %H:%M')
+                    else:
+                        formatted_date = 'Unknown date'
+                except:
+                    formatted_date = str(created_date)[:10] if created_date else 'Unknown date'
+                
+                context_parts.append(f"📄 TRANSCRIPT #{i}: {filename}")
+                context_parts.append(f"📅 Date: {formatted_date}")
+                context_parts.append("-" * 40)
+                
+                # Include COMPLETE transcript content (no truncation)
+                if transcript_content:
+                    context_parts.append(transcript_content.strip())
+                else:
+                    context_parts.append("No content available")
+                
+                context_parts.append("-" * 40)
+                context_parts.append("")
+            
+            # Add Linear context
+            try:
+                linear_context = self.linear_service.get_workspace_context()
+                linear_formatted = format_linear_context_comprehensive(linear_context)
+                context_parts.append(linear_formatted)
+            except Exception as e:
+                context_parts.append(f"🎯 LINEAR: unavailable ({str(e)[:50]})")
+            
+            context_parts.append(f"🕐 Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+            
+            custom_context = "\n".join(context_parts)
+            context_time = datetime.now()
+            print(f"=== SELECTED TRANSCRIPTS: Context built in {(context_time - fetch_time).total_seconds():.2f}s ===", flush=True)
+            
+            # Generate AI response with custom context
+            prompt_config = self.prompts.get('slack_bot_chat')
+            if not prompt_config:
+                return {
+                    "response_type": "ephemeral",
+                    "text": "❌ Chat prompt configuration not found."
+                }
+            
+            system_prompt = prompt_config['system_prompt']
+            user_prompt = prompt_config['user_prompt'].format(
+                context=custom_context,
+                user_message=user_question
+            )
+            
+            print(f"=== SELECTED TRANSCRIPTS: Calling AI with context size: {len(custom_context)} chars ===", flush=True)
+            response_text = await self.ai_service.generate_text_async(system_prompt, user_prompt)
+            ai_time = datetime.now()
+            print(f"=== SELECTED TRANSCRIPTS: AI response in {(ai_time - context_time).total_seconds():.2f}s ===", flush=True)
+            
+            # Build transcript list for response header
+            transcript_list = ", ".join([t.get('filename', 'Unknown') for t in selected_transcripts])
+            
+            total_time = datetime.now()
+            print(f"=== SELECTED TRANSCRIPTS: Total processing time: {(total_time - start_time).total_seconds():.2f}s ===", flush=True)
+            
+            return {
+                "response_type": "ephemeral",
+                "text": f"🎯 **AI Response** (using ONLY {len(selected_transcripts)} selected transcript(s): {transcript_list}):\n\n{response_text}"
+            }
+            
+        except Exception as e:
+            return {
+                "response_type": "ephemeral",
+                "text": f"❌ Error processing chat with selected transcripts: {str(e)}"
+            }
     
     async def _handle_summarize_command(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         """Handle /summarize command using prompts.yml."""
         text = payload.get("text", "").strip()
         
+        # If no text provided, summarize the most recent meeting
         if not text:
-            return {
-                "response_type": "ephemeral",
-                "text": "Please specify what to summarize:\n• `/summarize last @meeting @timestamp`\n• `/summarize client [client_name]`"
-            }
+            return await self._handle_meeting_summary([])
         
         args = text.split()
         
-        if len(args) >= 2 and args[0] == "last":
+        # Handle different summarize options
+        if args[0].lower() in ["last", "recent", "latest"]:
             return await self._handle_meeting_summary(args[1:])
         elif "client" in text.lower():
             return await self._handle_client_summary(text)
         else:
-            return {
-                "response_type": "ephemeral",
-                "text": "❌ Invalid format. Use:\n• `/summarize last @meeting @timestamp`\n• `/summarize client [client_name]`"
-            }
+            # Default to meeting summary for any other text
+            return await self._handle_meeting_summary([])
     
     async def _handle_create_ticket_command(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -580,26 +1166,36 @@ class SlackCommandHandler:
     async def _handle_meeting_summary(self, args: List[str]) -> Dict[str, Any]:
         """Handle meeting summary using prompts.yml."""
         try:
-            end_date = datetime.now().isoformat()
-            start_date = (datetime.now() - timedelta(days=7)).isoformat()
-            
-            transcripts = self.supabase_service.get_transcripts_by_date_range(start_date, end_date)
+            # Use the correct method to get recent transcripts
+            transcripts = self.supabase_service.get_recent_transcripts(limit=1)
             
             if not transcripts:
                 return {
                     "response_type": "ephemeral",
-                    "text": "📭 No recent meetings found in the last 7 days."
+                    "text": "📭 No recent meetings found."
                 }
             
             recent_meeting = transcripts[0]
-            meeting_date = recent_meeting.get('metadata', {}).get('meeting_date', 'Unknown date')
-            raw_transcript = recent_meeting.get('raw_transcript', '')
+            # Use the correct database schema columns
+            filename = recent_meeting.get('filename', 'Unknown Meeting')
+            created_date = recent_meeting.get('created_at', 'Unknown date')
+            transcript_content = recent_meeting.get('filtered_transcript', '')
             
-            if not raw_transcript:
+            if not transcript_content:
                 return {
                     "response_type": "ephemeral", 
                     "text": "📭 No transcript content found for recent meeting."
                 }
+            
+            # Format the date for display
+            try:
+                if created_date and created_date != 'Unknown date':
+                    date_obj = datetime.fromisoformat(created_date.replace('Z', '+00:00'))
+                    formatted_date = date_obj.strftime('%Y-%m-%d %H:%M')
+                else:
+                    formatted_date = 'Unknown date'
+            except:
+                formatted_date = str(created_date)[:10] if created_date else 'Unknown date'
             
             prompt_config = self.prompts.get('slack_bot_summarize_meeting')
             if not prompt_config:
@@ -610,8 +1206,8 @@ class SlackCommandHandler:
             
             system_prompt = prompt_config['system_prompt']
             user_prompt = prompt_config['user_prompt'].format(
-                context=f"Meeting Date: {meeting_date}",
-                meeting_transcript=raw_transcript[:3000]
+                context=f"Meeting: {filename} | Date: {formatted_date}",
+                meeting_transcript=transcript_content[:3000]
             )
             
             # Use async text generation for meeting summary
@@ -620,7 +1216,7 @@ class SlackCommandHandler:
             
             return {
                 "response_type": "ephemeral",
-                "text": f"📅 **Meeting Summary - {meeting_date}**\n\n{summary}"
+                "text": f"📅 **Meeting Summary - {filename}**\n*{formatted_date}*\n\n{summary}"
             }
             
         except Exception as e:
@@ -676,20 +1272,34 @@ class SlackCommandHandler:
         
         # Recent transcripts (handle database errors gracefully)
         try:
-            end_date = datetime.now().isoformat()
-            start_date = (datetime.now() - timedelta(days=7)).isoformat()
-            
-            transcripts = self.supabase_service.get_filtered_transcripts_by_date_range(start_date, end_date)
+            # Get most recent transcripts (using created_at since meeting_date doesn't exist)
+            transcripts = self.supabase_service.get_recent_transcripts(limit=3)
             
             if transcripts:
                 context_parts.append("📋 RECENT MEETINGS (Last 7 Days):")
                 context_parts.append("-" * 35)
-                for transcript in transcripts[:3]:
-                    meeting_date = transcript.get('metadata', {}).get('meeting_date', 'Unknown')
-                    filtered_data = transcript.get('filtered_data', {})
-                    ai_analysis = filtered_data.get('ai_analysis', '')
+                for transcript in transcripts:
+                    # Use actual database schema columns
+                    filename = transcript.get('filename', 'Unknown Meeting')
+                    created_date = transcript.get('created_at', 'Unknown Date')
+                    transcript_content = transcript.get('filtered_transcript', '')
                     
-                    context_parts.append(f"• {meeting_date}: {ai_analysis[:200]}..." if ai_analysis else f"• {meeting_date}: Meeting recorded")
+                    # Extract first few lines as summary since no ai_analysis exists
+                    content_preview = transcript_content[:300].replace('\n', ' ').strip() if transcript_content else 'No content available'
+                    
+                    # Format the date for display
+                    try:
+                        from datetime import datetime
+                        if created_date and created_date != 'Unknown Date':
+                            date_obj = datetime.fromisoformat(created_date.replace('Z', '+00:00'))
+                            formatted_date = date_obj.strftime('%Y-%m-%d %H:%M')
+                        else:
+                            formatted_date = 'Unknown Date'
+                    except:
+                        formatted_date = str(created_date)[:10] if created_date else 'Unknown Date'
+                    
+                    context_parts.append(f"• {filename} ({formatted_date})")
+                    context_parts.append(f"  📝 {content_preview}...")
                 context_parts.append("")
         except Exception as e:
             # Don't let database errors stop the entire context retrieval

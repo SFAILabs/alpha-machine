@@ -292,6 +292,34 @@ class SupabaseService:
             print(f"Error retrieving filtered transcripts by date range: {e}")
             return []
     
+    def get_recent_transcripts(self, limit: int = 3) -> List[Dict[str, Any]]:
+        """Get most recent transcripts ordered by creation date."""
+        if not self.client:
+            print("Error: Supabase client not initialized")
+            return []
+        
+        try:
+            response = self.client.table('filtered_transcripts').select('*').order('created_at', desc=True).limit(limit).execute()
+            return response.data or []
+        except Exception as e:
+            print(f"Error retrieving recent transcripts: {e}")
+            return []
+    
+    def get_transcript_by_id(self, transcript_id: str) -> Optional[Dict[str, Any]]:
+        """Get a specific transcript by ID."""
+        if not self.client:
+            print("Error: Supabase client not initialized")
+            return None
+        
+        try:
+            response = self.client.table('filtered_transcripts').select('*').eq('id', transcript_id).execute()
+            if response.data:
+                return response.data[0]
+            return None
+        except Exception as e:
+            print(f"Error retrieving transcript by ID: {e}")
+            return None
+    
     def update_filtered_transcript(self, transcript_id: str, updates: Dict[str, Any]) -> bool:
         """Update filtered transcript with new data."""
         if not self.client:
