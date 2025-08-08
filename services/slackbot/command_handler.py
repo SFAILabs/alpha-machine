@@ -26,6 +26,10 @@ from shared.core.models import LinearContext
 USER_TRANSCRIPT_SELECTIONS = {}
 SELECTION_TIMEOUT_MINUTES = 10
 
+# Global storage for pending ticket creations
+USER_PENDING_TICKETS = {}
+PENDING_TICKET_TIMEOUT_MINUTES = 10
+
 # Configure logging
 logger = logging.getLogger(__name__)
 
@@ -951,10 +955,10 @@ class SlackCommandHandler:
         """
         Handle /create-ticket command.
         
-        In test mode, this command creates a ticket in Linear.
-        Otherwise, it provides an AI analysis of what ticket should be created.
+        Shows AI analysis and asks for user confirmation before creating tickets.
         """
         text = payload.get("text", "").strip()
+        user_id = payload.get("user_id")
         
         if not text:
             return {
@@ -962,7 +966,14 @@ class SlackCommandHandler:
                 "text": "Please describe what you want to create in Linear."
             }
         
+        # Add timing to identify bottlenecks
+        start_time = datetime.now()
+        print(f"=== CREATE TICKET TIMING: Starting at {start_time} ===")
+        
+        context_start = datetime.now()
         context = await self._get_comprehensive_context()
+        context_time = datetime.now()
+        print(f"=== CREATE TICKET TIMING: Context fetched in {(context_time - context_start).total_seconds():.2f}s ===")
         
         prompt_config = self.prompts.get('slack_bot_create_tickets')
         if not prompt_config:
@@ -978,40 +989,225 @@ class SlackCommandHandler:
         )
         
         try:
-            # Use async text generation for create tickets
-            ai_response = await self.ai_service._call_openai_structured_async(system_prompt, user_prompt)
+            # Use async text generation for create tickets analysis
+            ai_start = datetime.now()
+            print(f"=== CREATE TICKET TIMING: Starting AI call at {ai_start} ===")
             
-            # If not in test mode, return the analysis
-            if not Config.LINEAR_TEST_MODE:
-                return {
-                    "response_type": "ephemeral",
-                    "text": f"📋 **Linear Ticket Analysis (Test Mode Disabled):**\n\n{ai_response[0]}"
-                }
+            # Truncate context to reduce OpenAI call time
+            max_context_length = 8000  # Limit context to avoid slow API calls
+            truncated_context = context[:max_context_length] + "..." if len(context) > max_context_length else context
             
-            # In test mode, create the ticket
-            issue_data = json.loads(ai_response[0])
-            created_issue = self.linear_service.create_issue(issue_data)
+            truncated_user_prompt = prompt_config['user_prompt'].format(
+                context=truncated_context,
+                ticket_description=text
+            )
             
-            if created_issue:
-                return {
-                    "response_type": "in_channel",
-                    "text": f"✅ **Ticket Created in Linear:**\n\n**Title:** {created_issue['title']}\n**ID:** {created_issue['id']}"
-                }
-            else:
-                return {
-                    "response_type": "ephemeral",
-                    "text": "❌ **Failed to create Linear ticket.** The AI analysis was:\n\n" + ai_response[0]
-                }
-                
-        except json.JSONDecodeError:
+            ai_response = await self.ai_service._call_openai_structured_async(system_prompt, truncated_user_prompt)
+            ai_end = datetime.now()
+            analysis = ai_response[0]
+            print(f"=== CREATE TICKET TIMING: AI completed in {(ai_end - ai_start).total_seconds():.2f}s ===")
+            print(f"=== CREATE TICKET TIMING: Analysis length: {len(analysis)} chars ===")
+            print(f"=== CREATE TICKET TIMING: Context length: {len(truncated_context)} chars ===")
+            
+            # Store the pending ticket creation data
+            ticket_data = {
+                "context": context,
+                "original_request": text,
+                "analysis": analysis,
+                "timestamp": datetime.now(),
+                "user_id": user_id
+            }
+            
+            # Store for this user (will expire after timeout)
+            USER_PENDING_TICKETS[user_id] = ticket_data
+            
+            # Always show analysis with YES/NO buttons (regardless of test mode)
+            test_mode_indicator = " [TEST MODE]" if Config.LINEAR_TEST_MODE else ""
+            
+            # Limit analysis text for Slack blocks (max 3000 chars to be safe)
+            max_analysis_length = 2800
+            truncated_analysis = analysis[:max_analysis_length] + "..." if len(analysis) > max_analysis_length else analysis
+            
+            # Clean the analysis text for Slack markdown (escape problematic characters)
+            cleaned_analysis = truncated_analysis.replace('*', '•').replace('`', "'")
+            
+            total_time = datetime.now()
+            print(f"=== CREATE TICKET TIMING: Total time {(total_time - start_time).total_seconds():.2f}s ===")
+            
+            # Prepare compact payload for interactive button value to avoid cross-instance state loss
+            # Limit analysis to keep under Slack's 2000 char value limit
+            compact_payload = {
+                "user_id": user_id,
+                "original_request": text,
+                "analysis": (analysis[:1400] + "..." if len(analysis) > 1400 else analysis)
+            }
+            compact_payload_str = json.dumps(compact_payload)
+
             return {
                 "response_type": "ephemeral",
-                "text": f"❌ **Error:** The AI returned an invalid format. Analysis:\n\n{ai_response[0] if 'ai_response' in locals() else 'No response'}"
+                "text": f"📋 Linear Ticket Analysis{test_mode_indicator}:\n\n{cleaned_analysis}\n\n⚡ Would you like me to create these tickets in Linear?",
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": f"📋 *Linear Ticket Analysis{test_mode_indicator}:*\n\n{cleaned_analysis}\n\n⚡ *Would you like me to create these tickets in Linear?*"
+                        }
+                    },
+                    {
+                        "type": "actions",
+                        "elements": [
+                            {
+                                "type": "button",
+                                "text": {
+                                    "type": "plain_text",
+                                    "text": "✅ Yes, Create Tickets"
+                                },
+                                "style": "primary",
+                                "action_id": "create_tickets_yes",
+                                "value": compact_payload_str
+                            },
+                            {
+                                "type": "button",
+                                "text": {
+                                    "type": "plain_text",
+                                    "text": "❌ No, Cancel"
+                                },
+                                "style": "danger",
+                                "action_id": "create_tickets_no",
+                                "value": compact_payload_str
+                            }
+                        ]
+                    }
+                ]
             }
+                
         except Exception as e:
             return {
                 "response_type": "ephemeral", 
                 "text": f"❌ Error processing ticket creation: {str(e)}"
+            }
+
+    def _get_pending_tickets(self, user_id: str) -> Optional[Dict[str, Any]]:
+        """Get pending ticket creation data for a user, checking timeout."""
+        if user_id not in USER_PENDING_TICKETS:
+            return None
+        
+        ticket_data = USER_PENDING_TICKETS[user_id]
+        
+        # Check if the selection has expired
+        if datetime.now() - ticket_data["timestamp"] > timedelta(minutes=PENDING_TICKET_TIMEOUT_MINUTES):
+            del USER_PENDING_TICKETS[user_id]
+            return None
+        
+        return ticket_data
+
+    def _clear_pending_tickets(self, user_id: str) -> None:
+        """Clear pending ticket creation data for a user."""
+        if user_id in USER_PENDING_TICKETS:
+            del USER_PENDING_TICKETS[user_id]
+
+    async def handle_create_tickets_confirmation(self, user_id: str, confirmed: bool) -> Dict[str, Any]:
+        """Handle YES/NO confirmation for ticket creation."""
+        ticket_data = self._get_pending_tickets(user_id)
+        
+        if not ticket_data:
+            return {
+                "response_type": "ephemeral",
+                "text": "❌ **No pending ticket creation found.** Please use `/create` again to generate new tickets."
+            }
+        
+        # Clear the pending data
+        self._clear_pending_tickets(user_id)
+        
+        if not confirmed:
+            return {
+                "response_type": "ephemeral",
+                "text": "✅ **Ticket creation cancelled.** No tickets were created in Linear."
+            }
+        
+        # User confirmed - create the tickets
+        try:
+            # Use the structured prompt to convert analysis to JSON
+            structured_prompt_config = self.prompts.get('slack_bot_create_tickets_structured')
+            if not structured_prompt_config:
+                return {
+                    "response_type": "ephemeral",
+                    "text": "❌ Structured tickets prompt configuration not found."
+                }
+            
+            print(f"=== TICKET CREATION: Starting structured conversion ===")
+            conversion_start = datetime.now()
+            
+            # Use minimal context for faster conversion
+            system_prompt = structured_prompt_config['system_prompt']
+            user_prompt = structured_prompt_config['user_prompt'].format(
+                context="", # Empty context for faster processing
+                ticket_description=ticket_data["original_request"],
+                analysis=ticket_data["analysis"][:4000]  # Limit analysis length
+            )
+            
+            # Get structured JSON response
+            structured_response = await self.ai_service._call_openai_structured_async(system_prompt, user_prompt)
+            conversion_end = datetime.now()
+            print(f"=== TICKET CREATION: Conversion completed in {(conversion_end - conversion_start).total_seconds():.2f}s ===")
+            
+            # Parse JSON tickets
+            tickets_json = json.loads(structured_response[0])
+            
+            # Create tickets in Linear
+            created_tickets = []
+            for ticket_data_item in tickets_json:
+                # Normalize keys from structured output to LinearService schema
+                mapped_issue = {
+                    # LinearService expects 'issue_title' and 'issue_description'
+                    'issue_title': ticket_data_item.get('issue_title') or ticket_data_item.get('title'),
+                    'issue_description': ticket_data_item.get('issue_description') or ticket_data_item.get('description'),
+                    # Optional fields
+                    'priority': ticket_data_item.get('priority'),
+                    'time_estimate': ticket_data_item.get('time_estimate') or ticket_data_item.get('estimate'),
+                    'assign_team_member': ticket_data_item.get('assign_team_member') or ticket_data_item.get('assignee'),
+                    'team': ticket_data_item.get('team'),
+                    # Project/milestone may be provided as names or ids depending on prompt used
+                    'project': ticket_data_item.get('project'),
+                    'milestone': ticket_data_item.get('milestone'),
+                    'project_id': ticket_data_item.get('project_id'),
+                    'milestone_id': ticket_data_item.get('milestone_id'),
+                    'deadline': ticket_data_item.get('deadline'),
+                }
+                
+                # In test mode, ensure title is prefixed
+                if Config.LINEAR_TEST_MODE and mapped_issue.get('issue_title'):
+                    if not mapped_issue['issue_title'].startswith('[TEST]'):
+                        mapped_issue['issue_title'] = f"[TEST] {mapped_issue['issue_title']}"
+                
+                # Create the issue in Linear
+                created_issue = self.linear_service.create_issue(mapped_issue)
+                if created_issue:
+                    created_tickets.append(created_issue)
+            
+            if created_tickets:
+                ticket_list = "\n".join([f"• **{t['title']}** (ID: {t['id']})" for t in created_tickets])
+                test_mode_note = " (TEST MODE)" if Config.LINEAR_TEST_MODE else ""
+                return {
+                    "response_type": "in_channel",
+                    "text": f"✅ **{len(created_tickets)} Ticket(s) Created in Linear{test_mode_note}:**\n\n{ticket_list}"
+                }
+            else:
+                return {
+                    "response_type": "ephemeral",
+                    "text": f"❌ **Failed to create Linear tickets.** The analysis was:\n\n{ticket_data['analysis']}"
+                }
+                
+        except json.JSONDecodeError as e:
+            return {
+                "response_type": "ephemeral",
+                "text": f"❌ **Error:** Failed to parse ticket data. {str(e)}"
+            }
+        except Exception as e:
+            return {
+                "response_type": "ephemeral",
+                "text": f"❌ Error creating tickets: {str(e)}"
             }
     
     async def _handle_update_ticket_command(self, payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -1289,7 +1485,6 @@ class SlackCommandHandler:
                     
                     # Format the date for display
                     try:
-                        from datetime import datetime
                         if created_date and created_date != 'Unknown Date':
                             date_obj = datetime.fromisoformat(created_date.replace('Z', '+00:00'))
                             formatted_date = date_obj.strftime('%Y-%m-%d %H:%M')
@@ -1334,6 +1529,9 @@ class SlackCommandHandler:
         """Send response back to Slack using response URL."""
         try:
             headers = {"Content-Type": "application/json"}
+            # Prefer replacing the initial ack message to keep ordering tidy in the channel UI
+            if "replace_original" not in response:
+                response["replace_original"] = True
             # Use a shorter timeout for the response to Slack
             response_result = requests.post(response_url, json=response, headers=headers, timeout=5)
             if response_result.status_code != 200:

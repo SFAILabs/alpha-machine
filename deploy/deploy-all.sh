@@ -1,9 +1,18 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Master Deployment Script for Alpha Machine
 # Usage: ./deploy-all.sh [environment] [services...]
 
 set -e
+
+# Check for bash 4.0+ for associative arrays
+if ((BASH_VERSINFO[0] < 4)); then
+    echo "Error: This script requires bash 4.0 or later for associative arrays."
+    echo "Current bash version: $BASH_VERSION"
+    echo "On macOS, install with: brew install bash"
+    echo "Or run with: /usr/local/bin/bash deploy-all.sh"
+    exit 1
+fi
 
 # Configuration
 ENVIRONMENT="${1:-production}"

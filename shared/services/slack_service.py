@@ -3,6 +3,7 @@ Slack service for Slack operations across all flows.
 """
 
 from typing import Dict, Any, List, Optional
+import requests
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 from shared.core.config import Config
@@ -131,3 +132,16 @@ class SlackService:
         except SlackApiError as e:
             print(f"Error updating message: {e}")
             return False 
+
+    def respond_to_interaction(self, response_url: str, payload: Dict[str, Any]) -> bool:
+        """Send a response to a Slack interaction via response_url (supports replace_original to keep loading state)."""
+        try:
+            headers = {"Content-Type": "application/json"}
+            resp = requests.post(response_url, json=payload, headers=headers, timeout=5)
+            if resp.status_code != 200:
+                print(f"Error responding to interaction: {resp.status_code} - {resp.text}")
+                return False
+            return True
+        except Exception as e:
+            print(f"Error sending interaction response: {e}")
+            return False

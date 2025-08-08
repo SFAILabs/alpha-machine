@@ -2,8 +2,11 @@
 Linear service for Linear integrations and ticket management.
 """
 
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+from datetime import datetime, timedelta
 from shared.core.models import LinearProject, LinearMilestone, LinearIssue, LinearContext
 from shared.core.config import Config
 
@@ -19,14 +22,29 @@ class LinearService:
             "Authorization": api_key,
             "Content-Type": "application/json"
         }
+        # HTTP session with retries and timeouts
+        self.session = requests.Session()
+        retry = Retry(
+            total=3,
+            read=3,
+            connect=3,
+            backoff_factor=0.5,
+            status_forcelist=[429, 500, 502, 503, 504],
+            allowed_methods=["POST"]
+        )
+        adapter = HTTPAdapter(max_retries=retry)
+        self.session.mount("https://", adapter)
+        self.session.mount("http://", adapter)
+        # Simple in-memory cache for workspace context
+        self._workspace_cache: Optional[Tuple[LinearContext, datetime]] = None
     
     def _make_request(self, query: str, variables: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Make a GraphQL request to Linear API."""
         payload = {"query": query}
         if variables:
             payload["variables"] = variables
-        
-        response = requests.post(self.base_url, json=payload, headers=self.headers)
+        # Set conservative timeouts to avoid long hangs on first call
+        response = self.session.post(self.base_url, json=payload, headers=self.headers, timeout=(10, 20))
         
         if response.status_code != 200:
             raise Exception(f"Linear API request failed: {response.status_code} - {response.text}")
@@ -35,6 +53,11 @@ class LinearService:
     
     def get_workspace_context(self) -> LinearContext:
         """Fetch and parse the current workspace state."""
+        # Return cached context if still fresh (2 minutes TTL)
+        if self._workspace_cache:
+            cached, ts = self._workspace_cache
+            if datetime.utcnow() - ts < timedelta(minutes=2):
+                return cached
         query = """
         query {
             projects {
@@ -79,7 +102,10 @@ class LinearService:
         
         try:
             data = self._make_request(query)
-            return self._parse_workspace_data(data)
+            parsed = self._parse_workspace_data(data)
+            # Cache the parsed context
+            self._workspace_cache = (parsed, datetime.utcnow())
+            return parsed
         except Exception as e:
             print(f"Warning: Error fetching Linear data: {e}")
             return LinearContext()
@@ -369,8 +395,9 @@ class LinearService:
 
         print(f"✅ SAFETY CHECK PASSED: Writing to workspace in test mode.")
 
-        # Prefix title with [TEST] in test mode
-        issue_data['issue_title'] = f"[TEST] {issue_data['issue_title']}"
+        # Prefix title with [TEST] in test mode (only once)
+        if issue_data.get('issue_title') and not str(issue_data['issue_title']).startswith('[TEST]'):
+            issue_data['issue_title'] = f"[TEST] {issue_data['issue_title']}"
         
         team_name_to_find = issue_data.get('team') or self.team_name
         team_id = self.get_team_id(team_name_to_find)
@@ -385,7 +412,10 @@ class LinearService:
         
         # Get or create project
         project_id = None
-        if issue_data.get('project'):
+        if issue_data.get('project_id'):
+            project_id = issue_data['project_id']
+            print(f"   📁 Using provided project_id: {project_id}")
+        elif issue_data.get('project'):
             print(f"   📁 Getting/creating project: {issue_data['project']}")
             project_id = self.get_or_create_project(issue_data['project'])
             if project_id:
@@ -395,7 +425,10 @@ class LinearService:
         
         # Get or create milestone
         milestone_id = None
-        if issue_data.get('milestone') and project_id:
+        if issue_data.get('milestone_id'):
+            milestone_id = issue_data['milestone_id']
+            print(f"   🎯 Using provided milestone_id: {milestone_id}")
+        elif issue_data.get('milestone') and project_id:
             print(f"   🎯 Getting/creating milestone: {issue_data['milestone']}")
             milestone_id = self.get_or_create_milestone(issue_data['milestone'], project_id)
             if milestone_id:

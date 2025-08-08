@@ -158,6 +158,7 @@ if ! $DEPLOY_CMD \
     --memory 1Gi \
     --cpu 1 \
     --max-instances 10 \
+    --min-instances 1 \
     --timeout 300s \
     --set-env-vars "$ENV_VARS" \
     --quiet; then
@@ -174,6 +175,7 @@ if ! $DEPLOY_CMD \
         --memory 1Gi \
         --cpu 1 \
         --max-instances 10 \
+        --min-instances 1 \
         --timeout 300s \
         --update-env-vars "$ENV_VARS" \
         --quiet; then

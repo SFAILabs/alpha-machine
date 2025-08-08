@@ -5,12 +5,14 @@ Handles Slack events like mentions, messages, reactions, etc.
 """
 
 from typing import Dict, Any
+import json
 from datetime import datetime
+import traceback
 
 from shared.core.config import Config
 from shared.services.slack_service import SlackService
 from shared.services.ai_service import OpenAIService
-from command_handler import SlackCommandHandler
+from command_handler import SlackCommandHandler, USER_PENDING_TICKETS
 
 
 class SlackEventHandler:
@@ -51,16 +53,23 @@ class SlackEventHandler:
         """Handle interactive components (buttons, modals, etc.)."""
         interaction_type = payload.get("type", "")
         
+        print(f"=== HANDLE_INTERACTION CALLED ===")
+        print(f"Interaction type: {interaction_type}")
+        print(f"Full payload: {payload}")
+        
         try:
             if interaction_type == "block_actions":
+                print("Calling _handle_block_actions")
                 await self._handle_block_actions(payload)
             elif interaction_type == "view_submission":
+                print("Calling _handle_view_submission")
                 await self._handle_view_submission(payload)
             else:
                 print(f"Unhandled interaction type: {interaction_type}")
                 
         except Exception as e:
             print(f"Error handling interaction {interaction_type}: {e}")
+            print(f"Exception details: {traceback.format_exc()}")
     
     async def _handle_app_mention(self, event: Dict[str, Any]) -> None:
         """Handle when the bot is mentioned."""
@@ -211,9 +220,13 @@ Feel free to mention me (@Alpha Machine) in any channel or send me a DM anytime!
         user = payload.get("user", {})
         channel = payload.get("channel", {})
         
+        print(f"Block actions payload: {payload}")
+        
         for action in actions:
             action_id = action.get("action_id", "")
             value = action.get("value", "")
+            
+            print(f"Processing action_id: '{action_id}' with value: '{value}'")
             
             if action_id == "generate_summary":
                 # Handle summary generation button
@@ -563,6 +576,140 @@ Feel free to mention me (@Alpha Machine) in any channel or send me a DM anytime!
                     
                 except Exception as e:
                     print(f"Error handling set transcript selection: {e}")
+            
+            elif action_id == "create_tickets_yes":
+                # Handle "Yes, Create Tickets" button
+                try:
+                    # Debug: Print what we're getting
+                    print(f"YES button payload - action: {action}")
+                    print(f"YES button payload - user: {user}")
+                    print(f"YES button payload - value: {value}")
+                    
+                    # Get user ID and any compact payload from value
+                    user_id = user.get("id")
+                    try:
+                        value_payload = json.loads(value) if value else {}
+                        # Fallback to user-provided compact payload
+                        if value_payload and value_payload.get("analysis") and value_payload.get("original_request"):
+                            # Seed the pending cache in case a different instance handles the interaction
+                            self.command_handler._clear_pending_tickets(user_id)
+                            USER_PENDING_TICKETS[user_id] = {
+                                "context": "",  # context not needed for conversion
+                                "original_request": value_payload.get("original_request"),
+                                "analysis": value_payload.get("analysis"),
+                                "timestamp": datetime.now(),
+                                "user_id": user_id
+                            }
+                    except Exception:
+                        pass
+                    
+                    print(f"Processing YES button click for user: {user_id}")
+                    
+                    # Immediately acknowledge with a loading message (do not replace the preview message)
+                    response_url = payload.get("response_url")
+                    if response_url:
+                        self.slack_service.respond_to_interaction(response_url, {
+                            "response_type": "ephemeral",
+                            "replace_original": False,
+                            "text": "⏳ Creating tickets..."
+                        })
+
+                    # Process the ticket creation
+                    response = await self.command_handler.handle_create_tickets_confirmation(user_id, True)
+                    
+                    print(f"Got response: {response}")
+                    
+                    # Final response: send another ephemeral (do NOT replace the preview message)
+                    response_text = response.get('text', 'No response generated')
+                    if response_url:
+                        self.slack_service.respond_to_interaction(response_url, {
+                            "response_type": "ephemeral",
+                            "replace_original": False,
+                            "text": response_text
+                        })
+                    else:
+                        # Fallback if no response_url
+                        self.slack_service.send_ephemeral_message(
+                            channel=channel.get("id"),
+                            user=user.get("id"),
+                            text=response_text
+                        )
+                    
+                except Exception as e:
+                    print(f"Error handling create tickets yes: {e}")
+                    print(f"Exception details: {traceback.format_exc()}")
+                    error_msg = f"❌ Error creating tickets: {str(e)}"
+                    if response_url:
+                        self.slack_service.respond_to_interaction(response_url, {
+                            "response_type": "ephemeral",
+                            "replace_original": True,
+                            "text": error_msg
+                        })
+                    else:
+                        self.slack_service.send_ephemeral_message(
+                            channel=channel.get("id"),
+                            user=user.get("id"),
+                            text=error_msg
+                        )
+            
+            elif action_id == "create_tickets_no":
+                # Handle "No, Cancel" button
+                try:
+                    # Debug: Print what we're getting
+                    print(f"NO button payload - action: {action}")
+                    print(f"NO button payload - user: {user}")
+                    print(f"NO button payload - value: {value}")
+                    
+                    # Get user ID from payload (standard way)
+                    user_id = user.get("id")
+                    
+                    print(f"Processing NO button click for user: {user_id}")
+                    
+                    # Immediately acknowledge cancellation (do not replace the preview message)
+                    response_url = payload.get("response_url")
+                    if response_url:
+                        self.slack_service.respond_to_interaction(response_url, {
+                            "response_type": "ephemeral",
+                            "replace_original": False,
+                            "text": "🚫 Cancelling..."
+                        })
+
+                    # Process the cancellation
+                    response = await self.command_handler.handle_create_tickets_confirmation(user_id, False)
+                    
+                    print(f"Got response: {response}")
+                    
+                    # Final response: send another ephemeral (do NOT replace the preview message)
+                    response_text = response.get('text', 'No response generated')
+                    if response_url:
+                        self.slack_service.respond_to_interaction(response_url, {
+                            "response_type": "ephemeral",
+                            "replace_original": False,
+                            "text": response_text
+                        })
+                    else:
+                        self.slack_service.send_ephemeral_message(
+                            channel=channel.get("id"),
+                            user=user.get("id"),
+                            text=response_text
+                        )
+                    
+                except Exception as e:
+                    print(f"Error handling create tickets no: {e}")
+                    print(f"Exception details: {traceback.format_exc()}")
+                    error_msg = f"❌ Error processing cancellation: {str(e)}"
+                    if response_url:
+                        self.slack_service.respond_to_interaction(response_url, {
+                            "response_type": "ephemeral",
+                            "replace_original": True,
+                            "text": error_msg
+                        })
+                    else:
+                        self.slack_service.send_ephemeral_message(
+                            channel=channel.get("id"),
+                            user=user.get("id"),
+                            text=error_msg
+                        )
             
             # Add more button handlers as needed
     

@@ -181,14 +181,28 @@ async def slack_commands(
     print(f"=== WEBHOOK: Adding background task for {command} ===", flush=True)
     
     try:
-        background_tasks.add_task(command_handler.handle_command, command_payload)
+        # Use a new event loop to avoid cancellation on reload
+        import asyncio
+        loop = asyncio.get_event_loop()
+        # Always schedule a plain callable to BackgroundTasks to avoid ASGI errors
+        background_tasks.add_task(lambda: loop.create_task(command_handler.handle_command(command_payload)))
         print(f"=== WEBHOOK: Background task added successfully ===", flush=True)
         logger.info(f"WEBHOOK: Background task added successfully")
         
         # Return immediate acknowledgment to meet Slack's 3-second timeout
+        friendly = {
+            "/chat": "🤖 Processing your /chat command... ⏳",
+            "/summarize": "📝 Processing your /summarize request... ⏳",
+            "/create": "📋 Processing your /create request... ⏳",
+            "/create-ticket": "📋 Processing your /create request... ⏳",
+            "/update": "✏️ Processing your /update request... ⏳",
+            "/teammember": "👤 Processing your /teammember request... ⏳",
+            "/weekly-summary": "📈 Processing your /weekly-summary request... ⏳",
+        }
+        ack_text = friendly.get(command, f"🤖 Processing your {command}... ⏳")
         return JSONResponse({
             "response_type": "ephemeral",
-            "text": "🤖 Processing your /chat command... ⏳"
+            "text": ack_text
         })
         
     except Exception as e:

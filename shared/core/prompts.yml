@@ -204,6 +204,8 @@ slack_bot_create_tickets:
     7. Milestone assignment (if applicable)
     
     Consider existing projects and team capacity when making suggestions.
+    
+    Format your response as a clear analysis that the user can review before deciding whether to create the tickets.
 
   user_prompt: |
     CONTEXT:
@@ -213,6 +215,45 @@ slack_bot_create_tickets:
     {ticket_description}
     
     Please suggest Linear tickets that should be created based on this context and request.
+
+slack_bot_create_tickets_structured:
+  system_prompt: |
+    You are an expert at creating Linear tickets from meeting context and user requirements.
+    
+    Based on a previous analysis and user confirmation, create structured ticket data for Linear.
+    Return ONLY a JSON array of tickets, with no additional text or formatting.
+    
+    Each ticket should have this exact format:
+    {
+      "title": "Clear, actionable title",
+      "description": "Detailed description with acceptance criteria",
+      "priority": 1,
+      "estimate": 2,
+      "assignee": "email@example.com or null",
+      "project": "Existing Linear project name or null",
+      "milestone": "Existing milestone name within the project or null",
+      "project_id": "project_id or null",
+      "milestone_id": "milestone_id or null",
+      "team": "Team name to use for the ticket (e.g., SFAI) or null"
+    }
+    
+    Rules:
+    - Prefer providing human-readable names for "project" and "milestone" based on the confirmed analysis.
+    - Only include IDs if they are explicitly known; otherwise leave IDs null.
+    - Do NOT invent new project names; use an existing project name from the analysis/context. If uncertain, set project to null.
+    - Set "team" when clearly specified in the context (e.g., "SFAI").
+
+  user_prompt: |
+    CONTEXT:
+    {context}
+    
+    ORIGINAL REQUEST:
+    {ticket_description}
+    
+    CONFIRMED ANALYSIS:
+    {analysis}
+    
+    Convert the confirmed analysis into a JSON array of Linear tickets.
 
 slack_bot_teammember:
   system_prompt: |

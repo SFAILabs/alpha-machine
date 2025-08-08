@@ -81,4 +81,5 @@ async def debug_ai():
 
 if __name__ == "__main__":
     logger.info("=== STARTING UVICORN SERVER ===")
-    uvicorn.run("main:app", host="0.0.0.0", port=8001, reload=True)
+    # Disable reload in production to avoid extra workers shutting down background tasks
+    uvicorn.run("main:app", host="0.0.0.0", port=8001, reload=False)
